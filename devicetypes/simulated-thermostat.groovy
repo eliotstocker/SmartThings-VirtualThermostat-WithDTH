@@ -26,6 +26,7 @@ metadata {
         command "setVirtualTemperature", ["number"]
         command "setHeatingStatus", ["boolean"]
         command "setEmergencyMode", ["boolean"]
+		command "setHeatingOff", ["boolean"]
         
 		attribute "temperatureUnit", "string"
 		attribute "targetTemp", "string"
@@ -50,8 +51,10 @@ metadata {
 				attributeState("VALUE_DOWN", action: "levelDown")
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
-				attributeState("idle",			backgroundColor:"#44B621")
-				attributeState("heating",		 backgroundColor:"#FFA81E")
+				attributeState("idle",		backgroundColor: "#44B621")
+				attributeState("heating",	backgroundColor: "#FFA81E")
+				attributeState("off",		backgroundColor: "#ddcccc")
+				attributeState("emergency",	backgroundColor: "#e60000")
 			}
 			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
 				attributeState("off", label:'off')
@@ -132,7 +135,7 @@ private initialize() {
 
     sendEvent(name:"temperature", value: 20.0, unit: "°C")
     sendEvent(name:"thermostatSetpoint", value: 20.0, unit: "°C")
-  	sendEvent(name:"thermostatOperatingState", value: "heating")
+  	sendEvent(name:"thermostatOperatingState", value: "off")
     sendEvent(name:"thermostatMode", value: "heat")
 }
 
@@ -175,6 +178,17 @@ def getTemperature() {
 def setHeatingSetpoint(temp) {
     log.debug "setting temp to: $temp"
 	sendEvent(name:"thermostatSetpoint", value: temp, unit: "°C")
+	sendEvent(name:"heatingSetpoint", value: temp, unit: "°C")
+}
+
+def heatingSetpointUp() {
+	def hsp = device.currentValue("thermostatSetpoint")
+	setHeatingSetpoint(hsp + 1.0)
+}
+
+def heatingSetpointDown() {
+	def hsp = device.currentValue("thermostatSetpoint")
+	setHeatingSetpoint(hsp - 1.0)
 }
 
 def levelUp() {
@@ -246,4 +260,7 @@ def setHeatingStatus(bool) {
 }
 def setEmergencyMode(bool) {
     sendEvent(name: "thermostatOperatingState", value: bool ? "emergency" : "idle")
+}
+def setHeatingOff(bool) {
+	sendEvent(name:"thermostatOperatingState", value: bool ? "off": "idle")
 }

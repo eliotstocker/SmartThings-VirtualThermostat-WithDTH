@@ -13,14 +13,17 @@ preferences {
 	section("Choose a temperature sensor... "){
 		input "sensor", "capability.temperatureMeasurement", title: "Sensor"
 	}
-	section("Select the heater or air conditioner outlet(s)... "){
+	section("Select the heater outlet(s)... "){
 		input "outlets", "capability.switch", title: "Outlets", multiple: true
 	}
 	section("Only heat when contact isnt open (optional, leave blank to not require contact sensor)..."){
 		input "motion", "capability.contactSensor", title: "Contact", required: false
 	}
 	section("Never go below this temperature: (optional)"){
-		input "emergencySetpoint", "decimal", title: "Emer Temp", required: false
+		input "emergencySetpoint", "decimal", title: "Emergency Temp", required: false
+	}
+	section("Temperature Threshold (Don't allow heating to go above or bellow this amount from set temperature)") {
+		input "threshold", "decimal", "title": "Temperature Threshold", required: false, defaultValue: 1.0
 	}
 }
 
@@ -141,8 +144,7 @@ def thermostatModeHandler(evt) {
 
 private evaluate(currentTemp, desiredTemp)
 {
-	def threshold = 1.0
-	log.debug "EVALUATE($currentTemp, $lastTemp, $desiredTemp)"
+	log.debug "EVALUATE($currentTemp, $desiredTemp)"
 	// heater
 	if ( (desiredTemp - currentTemp >= threshold)) {
 		heatingOn()
@@ -158,11 +160,11 @@ def heatingOn() {
         outlets.on()
         thermostat.setHeatingStatus(true)
     } else {
-        heatingOff()
+        heatingOff(true)
     }
 }
 
-def heatingOff() {
+def heatingOff(heatingOff) {
 	def thisTemp = sensor.currentTemperature
     if (thisTemp <= emergencySetpoint) {
         log.debug "Heating in Emergency Mode Now"
@@ -171,6 +173,10 @@ def heatingOff() {
     } else {
     	log.debug "Heating off Now"
     	outlets.off()
-        thermostat.setHeatingStatus(false)
+		if(heatingOff) {
+			thermostat.setHeatingOff(true)
+		} else {
+			thermostat.setHeatingStatus(false)
+		}
     }
 }
