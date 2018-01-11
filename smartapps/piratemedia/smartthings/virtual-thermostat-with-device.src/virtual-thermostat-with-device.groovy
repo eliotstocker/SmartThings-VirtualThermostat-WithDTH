@@ -137,7 +137,7 @@ def thermostatModeHandler(evt) {
 		evaluate(thisTemp, thermostat.currentValue("thermostatSetpoint"))
 	}
 	else {
-		heatingOff()
+		heatingOff(mode == 'heat' ? false : true)
 	}
 }
 
