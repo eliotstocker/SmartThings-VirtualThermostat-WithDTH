@@ -70,20 +70,20 @@ metadata {
 					backgroundColors: getTempColors(), canChangeIcon: true)
 		}
 		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, decoration: "flat") {
-			state("off", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_btn_icon.png")
-			state("heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_btn_icon.png")
-			state("updating", label:"", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cmd_working.png")
+			state("Off", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_icon.png")
+			state("Heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_icon.png")
+			state("Updating", label:"", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cmd_working.png")
 		}
         
 		standardTile("offBtn", "device.off", width:1, height:1, decoration: "flat") {
-			state("default", action: "offbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_btn_icon.png")
+			state("Off", action: "offbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_icon.png")
 		}
 		standardTile("heatBtn", "device.canHeat", width:1, height:1, decoration: "flat") {
-			state("true", action: "heatbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_btn_icon.png")
+			state("Heat", action: "heatbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_icon.png")
 			state "false", label: ''
 		}
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
-			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
+			state "Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		valueTile("heatingSetpoint", "device.thermostatSetpoint", width: 1, height: 1) {
 			state("heatingSetpoint", label:'${currentValue}', unit: unitString, foregroundColor: "#FFFFFF",
@@ -260,7 +260,7 @@ def levelUpDown() {
 def log() {
 }
 def changeMode() {
-	def val = device.currentValue("thermostatMode") == "off" ? "heat" : "off"
+	def val = device.currentValue("thermostatMode") == "Off" ? "Heat" : "Off"
 	sendEvent(name: "thermostatMode", value: val)
     return val
 }
