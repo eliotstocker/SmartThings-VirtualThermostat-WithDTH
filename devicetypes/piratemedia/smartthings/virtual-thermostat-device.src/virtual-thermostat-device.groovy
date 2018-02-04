@@ -4,11 +4,12 @@ metadata {
 		capability "Refresh"
 		capability "Sensor"
 		capability "Thermostat"
-		capability "Thermostat Heating Setpoint"
+		//capability "Thermostat Heating Setpoint"
 		capability "Thermostat Mode"
 		capability "Thermostat Operating State"
-		capability "Thermostat Setpoint"
+		//capability "Thermostat Setpoint"
 		capability "Temperature Measurement"
+		capability "Health Check"
 
 		command "refresh"
 		command "poll"
@@ -19,13 +20,13 @@ metadata {
 		command "levelUpDown"
 		command "levelUp"
 		command "levelDown"
-        command "heatingSetpointUp"
+		command "heatingSetpointUp"
 		command "heatingSetpointDown"
 		command "log"
 		command "changeMode"
-        command "setVirtualTemperature", ["number"]
-        command "setHeatingStatus", ["boolean"]
-        command "setEmergencyMode", ["boolean"]
+		command "setVirtualTemperature", ["number"]
+		command "setHeatingStatus", ["boolean"]
+		command "setEmergencyMode", ["boolean"]
 		command "setHeatingOff", ["boolean"]
         
 		attribute "temperatureUnit", "string"
@@ -43,7 +44,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"temperature", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue} °C', unit: '°C')
+				attributeState("default", label:'${currentValue}°', unit: unitString)
 			}
 			tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
 				attributeState("default", action: "levelUpDown")
@@ -85,7 +86,7 @@ metadata {
 			state "default", action:"refresh.refresh", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/refresh_icon.png"
 		}
 		valueTile("heatingSetpoint", "device.thermostatSetpoint", width: 1, height: 1) {
-			state("heatingSetpoint", label:'${currentValue}', unit: "°C", foregroundColor: "#FFFFFF",
+			state("heatingSetpoint", label:'${currentValue}', unit: unitString, foregroundColor: "#FFFFFF",
 				backgroundColors: [ [value: 0, color: "#FFFFFF"], [value: 7, color: "#FF3300"], [value: 15, color: "#FF3300"] ])
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
@@ -133,15 +134,16 @@ def configure() {
 private initialize() {
     log.trace "Executing 'initialize'"
 
-    sendEvent(name:"temperature", value: 20.0, unit: "°C")
-    sendEvent(name:"thermostatSetpoint", value: 20.0, unit: "°C")
+    sendEvent(name:"temperature", value: defaultTemp, unit: unitString)
+    sendEvent(name:"thermostatSetpoint", value: defaultTemp, unit: unitString)
+    sendEvent(name: "heatingSetpoint", value: defaultTemp, unit: unitString)
   	sendEvent(name:"thermostatOperatingState", value: "off")
     sendEvent(name:"thermostatMode", value: "heat")
 }
 
 def getTempColors() {
 	def colorMap
-//getTemperatureScale() == "C"   wantMetric()
+        //getTemperatureScale() == "C"   wantMetric()
 	if(compileForC()) {
 		colorMap = [
 			// Celsius Color Range
@@ -167,18 +169,22 @@ def getTempColors() {
 	}
 }
 
+def unitString() {  return compileForC() ? "°C": "°F" }
+def defaultTemp() { return compileForC() ? 20 : 70 }
 def lowRange() { return compileForC() ? 9 : 50 }
 def highRange() { return compileForC() ? 32 : 90 }
 def getRange() { return "${lowRange()}..${highRange()}" }
 
 def getTemperature() {
-	return currentValue("temperature")
+	return device.currentValue("temperature")
 }
 
 def setHeatingSetpoint(temp) {
     log.debug "setting temp to: $temp"
-	sendEvent(name:"thermostatSetpoint", value: temp, unit: "°C")
-	sendEvent(name:"heatingSetpoint", value: temp, unit: "°C")
+	sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString)
+	sendEvent(name:"heatingSetpoint", value: temp, unit: unitString)
+	refresh()
+	runIn(10, refresh)
 }
 
 def heatingSetpointUp() {
@@ -216,8 +222,9 @@ def refresh() {
     log.trace "Executing refresh"
     sendEvent(name: "thermostatMode", value: getThermostatMode())
     sendEvent(name: "thermostatOperatingState", value: getOperatingState())
-    sendEvent(name: "thermostatSetpoint", value: getThermostatSetpoint(), unit: "°C")
-    sendEvent(name: "temperature", value: getTemperature(), unit: "°C")
+    sendEvent(name: "thermostatSetpoint", value: getThermostatSetpoint(), unit: unitString)
+    sendEvent(name: "heatingSetpoint", value: getHeatingSetpoint(), unit: unitString)
+    sendEvent(name: "temperature", value: getTemperature(), unit: unitString)
     done()
 }
 def getThermostatMode() {
@@ -226,7 +233,7 @@ def getThermostatMode() {
 def getOperatingState() {
 	return device.currentValue("thermostatOperatingState")
 }
-def thermostatSetpoint() {
+def getThermostatSetpoint() {
 	return device.currentValue("thermostatSetpoint")
 }
 def getHeatingSetpoint() {
@@ -253,7 +260,7 @@ def changeMode() {
     return val
 }
 def setVirtualTemperature(temp) {
-	sendEvent(name:"temperature", value: temp, unit: "°C")
+	sendEvent(name:"temperature", value: temp, unit: unitString)
 }
 def setHeatingStatus(bool) {
 	sendEvent(name:"thermostatOperatingState", value: bool ? "heating" : "idle")
