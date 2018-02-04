@@ -9,8 +9,8 @@ definition(
 )
 
 preferences {
-	section("Choose a temperature sensor... "){
-		input "sensor", "capability.temperatureMeasurement", title: "Sensor"
+	section("Choose a temperature sensor(s)... (If multiple sensors are selected, the average value will be used)"){
+		input "sensors", "capability.temperatureMeasurement", title: "Sensor", multiple: true
 	}
 	section("Select the heater outlet(s)... "){
 		input "outlets", "capability.switch", title: "Outlets", multiple: true
@@ -75,13 +75,23 @@ def updated()
     }
     state.contact = true
 	state.lastTemp = null
-	subscribe(sensor, "temperature", temperatureHandler)
+	subscribe(sensors, "temperature", temperatureHandler)
 	if (motion) {
 		subscribe(motion, "contact", motionHandler)
 	}
     subscribe(thermostat, "thermostatSetpoint", thermostatTemperatureHandler)
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
-    thermostat.setVirtualTemperature(sensor.currentValue("temperature"))
+    thermostat.setVirtualTemperature(getAverageTemperature())
+}
+
+def getAverageTemperature() {
+	def total = 0;
+    def count = 0;
+	for(sensor in sensors) {
+    	total += sensor.currentValue("temperature")
+        count++
+    }
+    return total / count
 }
 
 def temperatureHandler(evt)
@@ -102,7 +112,7 @@ def motionHandler(evt)
     def thermostat = getThermostat()
 	if (evt.value == "closed") {
     	state.contact = true
-		def thisTemp = sensor.currentTemperature
+		def thisTemp = getAverageTemperature()
 		if (thisTemp != null) {
 			evaluate(thisTemp, thermostat.currentValue("thermostatSetpoint"))
 			state.lastTemp = thisTemp
@@ -119,7 +129,7 @@ def thermostatTemperatureHandler(evt) {
     //setpoint = temperature
 	log.debug "Desired Temperature set to: $temperature $state.contact"
     
-    def thisTemp = sensor.currentTemperature
+    def thisTemp = getAverageTemperature()
 	if (state.contact) {
 		evaluate(thisTemp, temperature)
 	}
@@ -133,7 +143,7 @@ def thermostatModeHandler(evt) {
 	log.debug "Mode Changed to: $mode"
     def thermostat = getThermostat()
     
-    def thisTemp = sensor.currentTemperature
+    def thisTemp = getAverageTemperature()
 	if (state.contact) {
 		evaluate(thisTemp, thermostat.currentValue("thermostatSetpoint"))
 	}
@@ -155,7 +165,7 @@ private evaluate(currentTemp, desiredTemp)
 }
 
 def heatingOn() {
-    if(thermostat.currentValue('thermostatMode') == 'heat' || force) {
+    if(thermostat.currentValue('thermostatMode') == 'Heat' || force) {
     	log.debug "Heating on Now"
         outlets.on()
         thermostat.setHeatingStatus(true)
@@ -165,7 +175,7 @@ def heatingOn() {
 }
 
 def heatingOff(heatingOff) {
-	def thisTemp = sensor.currentTemperature
+	def thisTemp = getAverageTemperature()
     if (thisTemp <= emergencySetpoint) {
         log.debug "Heating in Emergency Mode Now"
         outlet.on()
