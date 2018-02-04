@@ -44,7 +44,7 @@ metadata {
 	tiles(scale: 2) {
 		multiAttributeTile(name:"temperature", type:"thermostat", width:6, height:4, canChangeIcon: true) {
 			tileAttribute("device.temperature", key: "PRIMARY_CONTROL") {
-				attributeState("default", label:'${currentValue}°', unit: unitString)
+				attributeState("default", label:'${currentValue}°', unit: unitString())
 			}
 			tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
 				attributeState("default", action: "levelUpDown")
@@ -86,7 +86,7 @@ metadata {
 			state "Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
 		valueTile("heatingSetpoint", "device.thermostatSetpoint", width: 1, height: 1) {
-			state("heatingSetpoint", label:'${currentValue}', unit: unitString, foregroundColor: "#FFFFFF",
+			state("heatingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF",
 				backgroundColors: [ [value: 0, color: "#FFFFFF"], [value: 7, color: "#FF3300"], [value: 15, color: "#FF3300"] ])
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
@@ -139,11 +139,11 @@ def configure() {
 private initialize() {
     log.trace "Executing 'initialize'"
 
-    sendEvent(name:"temperature", value: defaultTemp, unit: unitString)
-    sendEvent(name:"thermostatSetpoint", value: defaultTemp, unit: unitString)
-    sendEvent(name: "heatingSetpoint", value: defaultTemp, unit: unitString)
-  	sendEvent(name:"thermostatOperatingState", value: "off")
-    sendEvent(name:"thermostatMode", value: "heat")
+    sendEvent(name:"temperature", value: defaultTemp(), unit: unitString())
+    sendEvent(name:"thermostatSetpoint", value: defaultTemp(), unit: unitString())
+    sendEvent(name: "heatingSetpoint", value: defaultTemp(), unit: unitString())
+  	sendEvent(name:"thermostatOperatingState", value: "Off")
+    sendEvent(name:"thermostatMode", value: "Heat")
 }
 
 def getTempColors() {
@@ -186,8 +186,8 @@ def getTemperature() {
 
 def setHeatingSetpoint(temp) {
     log.debug "setting temp to: $temp"
-	sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString)
-	sendEvent(name:"heatingSetpoint", value: temp, unit: unitString)
+	sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString())
+	sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
 	refresh()
 	runIn(10, refresh)
 }
@@ -227,9 +227,9 @@ def refresh() {
     log.trace "Executing refresh"
     sendEvent(name: "thermostatMode", value: getThermostatMode())
     sendEvent(name: "thermostatOperatingState", value: getOperatingState())
-    sendEvent(name: "thermostatSetpoint", value: getThermostatSetpoint(), unit: unitString)
-    sendEvent(name: "heatingSetpoint", value: getHeatingSetpoint(), unit: unitString)
-    sendEvent(name: "temperature", value: getTemperature(), unit: unitString)
+    sendEvent(name: "thermostatSetpoint", value: getThermostatSetpoint(), unit: unitString())
+    sendEvent(name: "heatingSetpoint", value: getHeatingSetpoint(), unit: unitString())
+    sendEvent(name: "temperature", value: getTemperature(), unit: unitString())
     done()
 }
 def getThermostatMode() {
@@ -247,10 +247,10 @@ def getHeatingSetpoint() {
 def poll() {
 }
 def offbtn() {
-	sendEvent(name: "thermostatMode", value: "off")
+	sendEvent(name: "thermostatMode", value: "Off")
 }
 def heatbtn() {
-	sendEvent(name: "thermostatMode", value: "heat")
+	sendEvent(name: "thermostatMode", value: "Heat")
 }
 def setThermostatMode(mode) {
     sendEvent(name: "thermostatMode", value: mode)
@@ -265,14 +265,14 @@ def changeMode() {
     return val
 }
 def setVirtualTemperature(temp) {
-	sendEvent(name:"temperature", value: temp, unit: unitString)
+	sendEvent(name:"temperature", value: temp, unit: unitString())
 }
 def setHeatingStatus(bool) {
-	sendEvent(name:"thermostatOperatingState", value: bool ? "heating" : "idle")
+	sendEvent(name:"thermostatOperatingState", value: bool ? "Heating" : "Idle")
 }
 def setEmergencyMode(bool) {
-    sendEvent(name: "thermostatOperatingState", value: bool ? "emergency" : "idle")
+    sendEvent(name: "thermostatOperatingState", value: bool ? "Emergency" : "Idle")
 }
 def setHeatingOff(bool) {
-	sendEvent(name:"thermostatOperatingState", value: bool ? "off": "idle")
+	sendEvent(name:"thermostatOperatingState", value: bool ? "Off": "Idle")
 }
