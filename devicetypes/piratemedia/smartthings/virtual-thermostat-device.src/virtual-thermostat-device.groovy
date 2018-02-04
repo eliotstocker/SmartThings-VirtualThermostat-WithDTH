@@ -114,9 +114,14 @@ metadata {
 	}*/
 }
 
-def compileForC() {
-	def retVal = true   // if using C mode, set this to true so that enums and colors are correct (due to ST issue of compile time evaluation)
-	return retVal
+def shouldReportInCentigrade() {
+	def retVal = true
+	try {
+    	def ts = getTemperatureScale();
+    	retVal = ts == "C"
+    } finally {
+		return retVal
+    }
 }
 
 def installed() {
@@ -144,7 +149,7 @@ private initialize() {
 def getTempColors() {
 	def colorMap
         //getTemperatureScale() == "C"   wantMetric()
-	if(compileForC()) {
+	if(shouldReportInCentigrade()) {
 		colorMap = [
 			// Celsius Color Range
 			[value: 0, color: "#153591"],
@@ -169,10 +174,10 @@ def getTempColors() {
 	}
 }
 
-def unitString() {  return compileForC() ? "°C": "°F" }
-def defaultTemp() { return compileForC() ? 20 : 70 }
-def lowRange() { return compileForC() ? 9 : 50 }
-def highRange() { return compileForC() ? 32 : 90 }
+def unitString() {  return shouldReportInCentigrade() ? "°C": "°F" }
+def defaultTemp() { return shouldReportInCentigrade() ? 20 : 70 }
+def lowRange() { return shouldReportInCentigrade() ? 9 : 50 }
+def highRange() { return shouldReportInCentigrade() ? 32 : 90 }
 def getRange() { return "${lowRange()}..${highRange()}" }
 
 def getTemperature() {
