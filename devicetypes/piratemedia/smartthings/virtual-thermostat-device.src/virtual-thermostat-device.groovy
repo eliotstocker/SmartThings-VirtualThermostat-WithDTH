@@ -52,14 +52,14 @@ metadata {
 				attributeState("VALUE_DOWN", action: "levelDown")
 			}
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
-				attributeState("idle",		backgroundColor: "#44B621")
-				attributeState("heating",	backgroundColor: "#FFA81E")
-				attributeState("off",		backgroundColor: "#ddcccc")
-				attributeState("emergency",	backgroundColor: "#e60000")
+				attributeState("Idle",		backgroundColor: "#44B621")
+				attributeState("Heating",	backgroundColor: "#FFA81E")
+				attributeState("Off",		backgroundColor: "#ddcccc")
+				attributeState("Emergency",	backgroundColor: "#e60000")
 			}
 			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
-				attributeState("off", label:'off')
-				attributeState("heat", label:'heat')
+				attributeState("Off", label:'Off')
+				attributeState("Heat", label:'Heat')
 			}
 			tileAttribute("device.thermostatSetpoint", key: "HEATING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
@@ -102,11 +102,39 @@ metadata {
 			state "default", action:"setHeatingSetpoint", backgroundColor:"#FF3300"
 			state "", label: ''
 		}
+        
+        valueTile("tempName1", "device.name1",  width: 1, height: 1, decoration: "flat") {
+			state "default", label:'${currentValue}', defaultState: true
+		}
+        valueTile("tempName2", "device.name2",  width: 1, height: 1, decoration: "flat") {
+			state "default", label:'${currentValue}', defaultState: true
+		}
+        valueTile("tempName3", "device.name3",  width: 1, height: 1, decoration: "flat") {
+			state "default", label:'${currentValue}', defaultState: true
+		}
+        valueTile("tempName4", "device.name4",  width: 1, height: 1, decoration: "flat") {
+			state "default", label:'${currentValue}', defaultState: true
+		}
+        
+        valueTile("tempSensor1", "device.temp1",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+			state "default", label:'${currentValue}°', defaultState: true
+		}
+        valueTile("tempSensor2", "device.temp2",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+			state "default", label:'${currentValue}°', defaultState: true
+		}
+        valueTile("tempSensor3", "device.temp3",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+			state "default", label:'${currentValue}°', defaultState: true
+		}
+        valueTile("tempSensor4", "device.temp4",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+			state "default", label:'${currentValue}°', defaultState: true
+		}
 
 		main("temp2")
 		details( ["temperature", "thermostatMode",
 				"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				"heatSliderControl", "offBtn", "heatBtn", "refresh"] )
+				"heatSliderControl", "offBtn", "heatBtn", "refresh",
+                "tempName1", "tempName2", "tempName3", "tempName4",
+                "tempSensor1", "tempSensor2", "tempSensor3", "tempSensor4"] )
 	}
 	/*preferences {
 		input "resetHistoryOnly", "bool", title: "Reset History Data", description: "", displayDuringSetup: false
@@ -139,9 +167,9 @@ def configure() {
 private initialize() {
     log.trace "Executing 'initialize'"
 
-    sendEvent(name:"temperature", value: defaultTemp(), unit: unitString())
-    sendEvent(name:"thermostatSetpoint", value: defaultTemp(), unit: unitString())
-    sendEvent(name: "heatingSetpoint", value: defaultTemp(), unit: unitString())
+    sendEvent(name:"temperature", value: defaultTemp(), unit: unitString(), displayed: false)
+    sendEvent(name:"thermostatSetpoint", value: defaultTemp(), unit: unitString(), displayed: false)
+    sendEvent(name: "heatingSetpoint", value: defaultTemp(), unit: unitString(), displayed: false)
   	sendEvent(name:"thermostatOperatingState", value: "Off")
     sendEvent(name:"thermostatMode", value: "Heat")
 }
@@ -265,7 +293,37 @@ def changeMode() {
     return val
 }
 def setVirtualTemperature(temp) {
-	sendEvent(name:"temperature", value: temp, unit: unitString())
+	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: false)
+}
+def setIndividualTemperature(temp, id, name) {
+	switch(id) {
+      case 0:
+        sendEvent(name:"name1", value: name, displayed: false)
+      	sendEvent(name:"temp1", value: temp, unit: unitString(), displayed: false)
+      	break
+      case 1:
+        sendEvent(name:"name2", value: name, displayed: false)
+      	sendEvent(name:"temp2", value: temp, unit: unitString(), displayed: false)
+      	break
+      case 2:
+     	sendEvent(name:"name3", value: name, displayed: false)
+      	sendEvent(name:"temp3", value: temp, unit: unitString(), displayed: false)
+      	break
+      case 3:
+        sendEvent(name:"name4", value: name, displayed: false)
+      	sendEvent(name:"temp4", value: temp, unit: unitString(), displayed: false)
+      	break
+    }
+}
+def clearSensorData() {
+	sendEvent(name:"name1", value: null, displayed: false)
+    sendEvent(name:"temp1", value: null, unit: unitString(), displayed: false)
+    sendEvent(name:"name2", value: null, displayed: false)
+    sendEvent(name:"temp2", value: null, unit: unitString(), displayed: false)
+    sendEvent(name:"name3", value: null, displayed: false)
+    sendEvent(name:"temp3", value: null, unit: unitString(), displayed: false)
+    sendEvent(name:"name4", value: null, displayed: false)
+    sendEvent(name:"temp4", value: null, unit: unitString(), displayed: false)
 }
 def setHeatingStatus(bool) {
 	sendEvent(name:"thermostatOperatingState", value: bool ? "Heating" : "Idle")
