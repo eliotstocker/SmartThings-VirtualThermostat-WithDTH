@@ -47,7 +47,8 @@ def installed()
 def createDevice() {
     def thermostat
     def label = app.getLabel()
-    log.debug "create device with id: pmvt$state.deviceID, named: $label, hub: $sensor.hub.id"
+	// Commenting out hub refernce - breaks in several thermostat DHs
+    log.debug "create device with id: pmvt$state.deviceID, named: $label" //, hub: $sensor.hub.id"
     try {
         thermostat = addChildDevice("piratemedia/smartthings", "Virtual Thermostat Device", "pmvt" + state.deviceID, null, [label: label, name: label, completedSetup: true])
     } catch(e) {
