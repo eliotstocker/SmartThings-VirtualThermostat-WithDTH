@@ -81,6 +81,7 @@ def updated()
 	}
     subscribe(thermostat, "thermostatSetpoint", thermostatTemperatureHandler)
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
+    thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
 }
 
@@ -89,6 +90,7 @@ def getAverageTemperature() {
     def count = 0;
 	for(sensor in sensors) {
     	total += sensor.currentValue("temperature")
+        thermostat.setIndividualTemperature(sensor.currentValue("temperature"), count, sensor.label)
         count++
     }
     return total / count
