@@ -167,7 +167,7 @@ private evaluate(currentTemp, desiredTemp)
 }
 
 def heatingOn() {
-    if(thermostat.currentValue('thermostatMode') == 'Heat' || force) {
+    if(thermostat.currentValue('thermostatMode') == 'heat' || force) {
     	log.debug "Heating on Now"
         outlets.on()
         thermostat.setHeatingStatus(true)
