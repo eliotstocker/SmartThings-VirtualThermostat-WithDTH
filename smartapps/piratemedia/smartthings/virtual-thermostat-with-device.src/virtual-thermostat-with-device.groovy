@@ -58,7 +58,10 @@ def createDevice() {
 }
 
 def getThermostat() {
-    return getChildDevice("pmvt" + state.deviceID)
+	def child = getChildDevices().find {
+    	d -> d.deviceNetworkId.startsWith("pmvt" + state.deviceID)
+  	}
+    return child
 }
 
 def uninstalled() {
@@ -99,7 +102,7 @@ def getAverageTemperature() {
 def temperatureHandler(evt)
 {
     def thermostat = getThermostat()
-    thermostat.setVirtualTemperature(sensor.currentValue("temperature"))
+    thermostat.setVirtualTemperature(getAverageTemperature())
 	if (state.contact || emergencySetpoint) {
 		evaluate(evt.doubleValue, thermostat.currentValue("thermostatSetpoint"))
         state.lastTemp = evt.doubleValue
