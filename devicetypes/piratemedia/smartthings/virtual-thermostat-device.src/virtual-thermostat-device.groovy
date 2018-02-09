@@ -143,7 +143,7 @@ metadata {
 }
 
 def shouldReportInCentigrade() {
-	def retVal = true
+	def retVal = true  //Set this to true for Centigrade, false for Fahrenheit  so that enums and colors are correct (due to ST issue of compile time evaluation)
 	try {
     	def ts = getTemperatureScale();
     	retVal = ts == "C"
@@ -204,7 +204,7 @@ def getTempColors() {
 
 def unitString() {  return shouldReportInCentigrade() ? "°C": "°F" }
 def defaultTemp() { return shouldReportInCentigrade() ? 20 : 70 }
-def lowRange() { return shouldReportInCentigrade() ? 9 : 50 }
+def lowRange() { return shouldReportInCentigrade() ? 9 : 45 }
 def highRange() { return shouldReportInCentigrade() ? 32 : 90 }
 def getRange() { return "${lowRange()}..${highRange()}" }
 
