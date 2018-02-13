@@ -13,9 +13,11 @@ preferences {
 	section("Temperature Scale"){
 		input "scale", "bool", title: "Use Centigrade Scale", defaultValue: true
 	}
-	section("Devices") {
-		app(name: "thermostats", appName: "Virtual Thermostat With Device", namespace: "piratemedia/smartthings", title: "New Thermostat", multiple: true)
-	}
+    section("Devices") {
+    }
+    section {
+        app(name: "thermostats", appName: "Virtual Thermostat With Device", namespace: "piratemedia/smartthings", title: "New Thermostat", multiple: true)
+    }
 }
 
 def installed() {
@@ -31,6 +33,17 @@ def updated() {
 	initialize()
 }
 
+def updateChildTempScales() {
+    def children = getChildApps()
+    children.each { child ->
+        child.updateTempScale()
+    }
+}
+
 def initialize() {
-	// TODO: subscribe to attributes, devices, locations, etc.
+    updateChildTempScales()
+}
+
+def getTemperatureScale() {
+    return scale ? "C" : "F"
 }

@@ -143,13 +143,13 @@ metadata {
 }
 
 def shouldReportInCentigrade() {
-	def retVal = true  //Set this to true for Centigrade, false for Fahrenheit  so that enums and colors are correct (due to ST issue of compile time evaluation)
-	try {
+	return state.tempScale == "C"
+	/*try {
     	def ts = getTemperatureScale();
     	retVal = ts == "C"
     } finally {
 		return retVal
-    }
+    }*/
 }
 
 def installed() {
@@ -172,6 +172,7 @@ private initialize() {
     sendEvent(name: "heatingSetpoint", value: defaultTemp(), unit: unitString(), displayed: false)
   	sendEvent(name:"thermostatOperatingState", value: "off")
     sendEvent(name:"thermostatMode", value: "heat")
+	state.tempScale = "C"
 }
 
 def getTempColors() {
@@ -333,4 +334,8 @@ def setEmergencyMode(bool) {
 }
 def setHeatingOff(bool) {
 	sendEvent(name:"thermostatOperatingState", value: bool ? "off": "idle")
+}
+
+def setTemperatureScale(val) {
+	state.tempScale = val;
 }

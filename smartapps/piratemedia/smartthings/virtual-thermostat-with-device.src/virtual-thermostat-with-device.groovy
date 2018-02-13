@@ -5,7 +5,8 @@ definition(
     description: "Control a heater in conjunction with any temperature sensor, like a SmartSense Multi.",
     category: "Green Living",
     iconUrl: "https://raw.githubusercontent.com/eliotstocker/SmartThings-VirtualThermostat-WithDTH/master/logo-small.png",
-    iconX2Url: "https://raw.githubusercontent.com/eliotstocker/SmartThings-VirtualThermostat-WithDTH/master/logo.png"
+    iconX2Url: "https://raw.githubusercontent.com/eliotstocker/SmartThings-VirtualThermostat-WithDTH/master/logo.png",
+	parent: "piratemedia/smartthings:Virtual Thermostat Manager",
 )
 
 preferences {
@@ -86,6 +87,7 @@ def updated()
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
+	thermostat.setTemperatureScale(parent.getTemperatureScale())
 }
 
 def getAverageTemperature() {
@@ -194,4 +196,8 @@ def heatingOff(heatingOff) {
 			thermostat.setHeatingStatus(false)
 		}
     }
+}
+
+def updateTempScale() {
+	thermostat.setTemperatureScale(parent.getTemperatureScale())
 }
