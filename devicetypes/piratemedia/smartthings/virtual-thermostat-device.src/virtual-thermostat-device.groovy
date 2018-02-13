@@ -143,7 +143,7 @@ metadata {
 }
 
 def shouldReportInCentigrade() {
-	return state.tempScale == "C"
+	return device.currentValue("tempScale") == "C"
 	/*try {
     	def ts = getTemperatureScale();
     	retVal = ts == "C"
@@ -223,21 +223,25 @@ def setHeatingSetpoint(temp) {
 
 def heatingSetpointUp() {
 	def hsp = device.currentValue("thermostatSetpoint")
+	if(hsp + 1.0 > highRange()) return;
 	setHeatingSetpoint(hsp + 1.0)
 }
 
 def heatingSetpointDown() {
 	def hsp = device.currentValue("thermostatSetpoint")
+	if(hsp - 1.0 < lowRange()) return;
 	setHeatingSetpoint(hsp - 1.0)
 }
 
 def levelUp() {
 	def hsp = device.currentValue("thermostatSetpoint")
+	if(hsp + 1.0 > highRange()) return;
     setHeatingSetpoint(hsp + 1.0)
 }
 
 def levelDown() {
     def hsp = device.currentValue("thermostatSetpoint")
+	if(hsp - 1.0 < lowRange()) return;
     setHeatingSetpoint(hsp - 1.0)
 }
 
@@ -337,5 +341,6 @@ def setHeatingOff(bool) {
 }
 
 def setTemperatureScale(val) {
-	state.tempScale = val
+	log.debug "set temp scale to: $val"
+	sendEvent(name:"tempScale", value: val, displayed: false)
 }
