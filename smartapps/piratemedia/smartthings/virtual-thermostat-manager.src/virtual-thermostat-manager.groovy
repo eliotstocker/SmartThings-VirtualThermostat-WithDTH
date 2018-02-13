@@ -11,9 +11,9 @@ definition(
 
 preferences {
     page(name: "Install", title: "Thermostat Manager", install: true, uninstall: true) {
-        section("Temperature Scale") {
+        /*section("Temperature Scale") {
             input "scale", "bool", title: "Use Centigrade Scale", defaultValue: true
-        }
+        }*/
         section("Devices") {
         }
         section {

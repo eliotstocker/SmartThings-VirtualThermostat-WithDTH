@@ -143,7 +143,8 @@ metadata {
 }
 
 def shouldReportInCentigrade() {
-	return device.currentValue("tempScale") == "C"
+    //there is no way to do this dynamically right now, a number of the functions that call this function are compile time evaluated :(
+	return true //Set this to true for Centigrade, false for Fahrenheit  so that enums and colors are correct (due to ST issue of compile time evaluation)
 	/*try {
     	def ts = getTemperatureScale();
     	retVal = ts == "C"
