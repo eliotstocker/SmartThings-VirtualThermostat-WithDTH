@@ -12,3 +12,7 @@ install both the smartapp and the device handler otherwise nothing will work, on
 Send me a Tweet at @eliotstocker if you want to discuss further
 
 pull requests welcome, this is a quick project over a weekend, so im sure lots of improvements can be made
+
+Contributors:
+[Eliot Stocker](https://github.com/eliotstocker)
+[Enis Hoca](https://github.com/enishoca)
