@@ -87,7 +87,7 @@ def updated()
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
-	thermostat.setTemperatureScale(parent.getTemperatureScale())
+	thermostat.setTemperatureScale(parent.getTempScale())
 }
 
 def getAverageTemperature() {
@@ -199,5 +199,5 @@ def heatingOff(heatingOff) {
 }
 
 def updateTempScale() {
-	thermostat.setTemperatureScale(parent.getTemperatureScale())
+	thermostat.setTemperatureScale(parent.getTempScale())
 }

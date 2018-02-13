@@ -10,25 +10,23 @@ definition(
 )
 
 preferences {
-	section("Temperature Scale"){
-		input "scale", "bool", title: "Use Centigrade Scale", defaultValue: true
-	}
-    section("Devices") {
-    }
-    section {
-        app(name: "thermostats", appName: "Virtual Thermostat With Device", namespace: "piratemedia/smartthings", title: "New Thermostat", multiple: true)
+    page(name: "Install", title: "Thermostat Manager", install: true, uninstall: true) {
+        section("Temperature Scale") {
+            input "scale", "bool", title: "Use Centigrade Scale", defaultValue: true
+        }
+        section("Devices") {
+        }
+        section {
+            app(name: "thermostats", appName: "Virtual Thermostat With Device", namespace: "piratemedia/smartthings", title: "New Thermostat", multiple: true)
+        }
     }
 }
 
 def installed() {
-	log.debug "Installed with settings: ${settings}"
-
 	initialize()
 }
 
 def updated() {
-	log.debug "Updated with settings: ${settings}"
-
 	unsubscribe()
 	initialize()
 }
@@ -44,6 +42,6 @@ def initialize() {
     updateChildTempScales()
 }
 
-def getTemperatureScale() {
+def getTempScale() {
     return scale ? "C" : "F"
 }

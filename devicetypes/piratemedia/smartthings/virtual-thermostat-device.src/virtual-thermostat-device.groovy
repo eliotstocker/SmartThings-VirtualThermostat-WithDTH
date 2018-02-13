@@ -337,5 +337,5 @@ def setHeatingOff(bool) {
 }
 
 def setTemperatureScale(val) {
-	state.tempScale = val;
+	state.tempScale = val
 }
