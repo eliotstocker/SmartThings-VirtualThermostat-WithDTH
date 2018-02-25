@@ -33,6 +33,10 @@ def installed()
     state.deviceID = Math.abs(new Random().nextInt() % 9999) + 1
 	state.lastTemp = null
     state.contact = true
+    state.todayTime = 0
+    state.yesterdayTime = 0
+    state.date = new Date().format("dd-MM-yy")
+    state.lastOn = 0
     /*def thermostat = createDevice()
     
 	subscribe(sensor, "temperature", temperatureHandler)
@@ -73,12 +77,17 @@ def updated()
 {
     log.debug "running updated: $app.label"
 	unsubscribe()
+    unschedule()
     def thermostat = getThermostat()
     if(thermostat == null) {
         thermostat = createDevice()
     }
     state.contact = true
 	state.lastTemp = null
+    if(state.todayTime == null) state.todayTime = 0
+    if(state.yesterdayTime == null) state.yesterdayTime = 0
+    if(state.date == null) state.date = new Date().format("dd-MM-yy")
+    if(state.lastOn == null) state.lastOn = 0
 	subscribe(sensors, "temperature", temperatureHandler)
 	if (motion) {
 		subscribe(motion, "contact", motionHandler)
@@ -88,6 +97,7 @@ def updated()
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
 	thermostat.setTemperatureScale(parent.getTempScale())
+    runEvery1Hour(updateTimings)
 }
 
 def getAverageTemperature() {
@@ -165,16 +175,17 @@ private evaluate(currentTemp, desiredTemp)
 	// heater
 	if ( (desiredTemp - currentTemp >= threshold)) {
 		heatingOn()
-	}
-	if ( (currentTemp - desiredTemp >= threshold)) {
+	} else if ( (currentTemp - desiredTemp >= threshold)) {
 		heatingOff()
-	}
+	} else if(state.current == "on") {
+        updateTimings()
+    }
 }
 
 def heatingOn() {
     if(thermostat.currentValue('thermostatMode') == 'heat' || force) {
     	log.debug "Heating on Now"
-        outlets.on()
+        outletsOn()
         thermostat.setHeatingStatus(true)
     } else {
         heatingOff(true)
@@ -185,11 +196,11 @@ def heatingOff(heatingOff) {
 	def thisTemp = getAverageTemperature()
     if (thisTemp <= emergencySetpoint) {
         log.debug "Heating in Emergency Mode Now"
-        outlet.on()
+        ouletsOn()
         thermostat.setEmergencyMode(true)
     } else {
     	log.debug "Heating off Now"
-    	outlets.off()
+    	outletsOff()
 		if(heatingOff) {
 			thermostat.setHeatingOff(true)
 		} else {
@@ -200,4 +211,53 @@ def heatingOff(heatingOff) {
 
 def updateTempScale() {
 	thermostat.setTemperatureScale(parent.getTempScale())
+}
+
+def updateTimings() {
+    def date = new Date().format("dd-MM-yy")
+    if(state.current == "on") {
+        int time = Math.round(new Date().getTime() / 1000) - state.lastOn
+        state.todayTime = state.todayTime + time
+        state.lastOn = Math.round(new Date().getTime() / 1000)
+    }
+    if(state.date != date) {
+        state.yesterdayTime = state.todayTime
+        state.date = date
+        state.todayTime = 0
+    }
+    thermostat.setTimings(state.todayTime, state.yesterdayTime)
+}
+
+def outletsOn() {
+    outlets.on()
+    def date = new Date().format("dd-MM-yy")
+    if(state.current == "on") {
+        int time = Math.round(new Date().getTime() / 1000) - state.lastOn
+        state.todayTime = state.todayTime + time
+    }
+    if(state.date != date) {
+        state.yesterdayTime = state.todayTime
+        state.date = date
+        state.todayTime = 0
+    }
+    state.lastOn = Math.round(new Date().getTime() / 1000)
+    state.current = "on"
+    thermostat.setTimings(state.todayTime, state.yesterdayTime)
+}
+
+def outletsOff() {
+    outlets.off()
+    def date = new Date().format("dd-MM-yy")
+    if(state.current == "on") {
+        int time = Math.round(new Date().getTime() / 1000) - state.lastOn
+        state.todayTime = state.todayTime + time
+    }
+    if(state.date != date) {
+        state.yesterdayTime = state.todayTime
+        state.date = date
+        state.todayTime = 0
+    }
+    state.current = "off"
+    state.lastOn = 0;
+    thermostat.setTimings(state.todayTime, state.yesterdayTime)
 }
