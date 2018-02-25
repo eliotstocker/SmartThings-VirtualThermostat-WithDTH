@@ -128,13 +128,29 @@ metadata {
         valueTile("tempSensor4", "device.temp4",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
 			state "default", label:'${currentValue}°', defaultState: true
 		}
+        
+        valueTile("todayTimeLabel", "timelabel", width: 3, height: 1, canChangeIcon: true, decoration: "flat") {
+            state "default", label:'Time On Today (HH:MM)', defaultState: true
+        }
+        valueTile("yesterdayTimeLabel", "timelabel2", width: 3, height: 1, canChangeIcon: true, decoration: "flat") {
+            state "default", label:'Time On Yesterday (HH:MM)', defaultState: true
+        }
+        
+        valueTile("todayTime", "device.timeOnToday", width: 3, height: 1, canChangeIcon: true, decoration: "flat") {
+            state "default", label:'${currentValue}', defaultState: true
+        }
+        valueTile("yesterdayTime", "device.timeOnYesterday", width: 3, height: 1, canChangeIcon: true, decoration: "flat") {
+            state "default", label:'${currentValue}', defaultState: true
+        }
 
 		main("temp2")
 		details( ["temperature", "thermostatMode",
 				"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
 				"heatSliderControl", "offBtn", "heatBtn", "refresh",
                 "tempName1", "tempName2", "tempName3", "tempName4",
-                "tempSensor1", "tempSensor2", "tempSensor3", "tempSensor4"] )
+                "tempSensor1", "tempSensor2", "tempSensor3", "tempSensor4",
+                "todayTimeLabel", "yesterdayTimeLabel",
+                "todayTime", "yesterdayTime"] )
 	}
 	/*preferences {
 		input "resetHistoryOnly", "bool", title: "Reset History Data", description: "", displayDuringSetup: false
@@ -344,4 +360,11 @@ def setHeatingOff(bool) {
 def setTemperatureScale(val) {
 	log.debug "set temp scale to: $val"
 	sendEvent(name:"tempScale", value: val, displayed: false)
+}
+
+def setTimings(int today, int yesterday) {
+    String todayFormatted = new GregorianCalendar( 0, 0, 0, 0, 0, today, 0 ).time.format( 'HH:mm' )
+    String yesterdayFormatted = new GregorianCalendar( 0, 0, 0, 0, 0, yesterday, 0 ).time.format( 'HH:mm' )
+    sendEvent(name:"timeOnToday", value: todayFormatted, displayed: true)
+    sendEvent(name:"timeOnYesterday", value: yesterdayFormatted, displayed: true)
 }
