@@ -28,15 +28,9 @@ metadata {
 		command "heatingSetpointDown"
 		command "changeMode"
 		command "setVirtualTemperature", ["number"]
-		command "setHeatingStatus", ["boolean"]
-		command "setEmergencyMode", ["boolean"]
-		command "setHeatingOff", ["boolean"]
+		command "setHeatingStatus", ["string"]
         
 		attribute "temperatureUnit", "string"
-		attribute "targetTemp", "string"
-		attribute "safetyTempMin", "string"
-		attribute "safetyTempMax", "string"
-		attribute "safetyTempExceeded", "string"
 	}
 
 	simulator {
@@ -154,8 +148,8 @@ private initialize() {
     sendEvent(name:"heatingSetpoint",             value: defaultTemp(), unit: unitString(), displayed: false)
   	sendEvent(name:"thermostatOperatingState",    value: "off")
     sendEvent(name:"thermostatMode",              value: "off")
-    sendEvent(name:"supportedThermostatModes",    value: ['heat', 'off'])
-    sendEvent(name:"supportedThermostatFanModes", values: [])
+    sendEvent(name:"supportedThermostatModes",    value: ['heat', 'off'], displayed: false)
+    sendEvent(name:"supportedThermostatFanModes", values: [], displayed: false)
     
 	state.tempScale = "C"
 }
@@ -241,8 +235,8 @@ def refresh() {
     sendEvent(name: "thermostatSetpoint",          value: getThermostatSetpoint(), unit: unitString())
     sendEvent(name: "heatingSetpoint",             value: getHeatingSetpoint(), unit: unitString())
     sendEvent(name: "temperature",                 value: getTemperature(), unit: unitString())
-    sendEvent(name: "supportedThermostatModes",    value: ['heat', 'off'])
-    sendEvent(name: "supportedThermostatFanModes", values: [])
+    sendEvent(name: "supportedThermostatModes",    value: ['heat', 'off'], displayed: false)
+    sendEvent(name: "supportedThermostatFanModes", values: [], displayed: false)
     done()
 }
 
@@ -266,35 +260,36 @@ def poll() {
 }
 
 def offbtn() {
-	sendEvent(name: "thermostatMode", value: "off")
+	setThermostatMode("off")
 }
 
 def heatbtn() {
-	sendEvent(name: "thermostatMode", value: "heat")
+	setThermostatMode("heat")
 }
 
 def setThermostatMode(mode) {
-    sendEvent(name: "thermostatMode", value: mode)
+	if(device.currentValue("thermostatMode") != mode) {
+    	sendEvent(name: "thermostatMode", value: mode)
+    }
 }
 
 def levelUpDown() {
 }
 
-def log() {
-}
-
 def changeMode() {
 	def val = device.currentValue("thermostatMode") == "off" ? "heat" : "off"
-	sendEvent(name: "thermostatMode", value: val)
+	setThermostatMode(val)
     return val
 }
 
 def setVirtualTemperature(temp) {
-	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: true)
+	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: false)
 }
 
 def setHeatingStatus(string) {
-	sendEvent(name:"thermostatOperatingState", value: string)
+	if(device.currentValue("thermostatOperatingState") != string) {
+		sendEvent(name:"thermostatOperatingState", value: string)
+    }
 }
 
 def setTemperatureScale(val) {
