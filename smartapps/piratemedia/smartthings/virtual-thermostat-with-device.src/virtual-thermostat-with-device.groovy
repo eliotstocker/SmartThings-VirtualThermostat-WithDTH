@@ -171,7 +171,6 @@ def updated()
     //reset some values
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
-	thermostat.setTemperatureScale(parent.getTempScale())
 }
 
 def temperatureHandler(evt)
@@ -190,8 +189,4 @@ def thermostatTemperatureHandler(evt) {
 
 def thermostatModeHandler(evt) {
 	handleChange()
-}
-
-def updateTempScale() {
-	thermostat.setTemperatureScale(parent.getTempScale())
 }

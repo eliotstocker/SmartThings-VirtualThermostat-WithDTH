@@ -11,9 +11,6 @@ definition(
 
 preferences {
     page(name: "Install", title: "Thermostat Manager", install: true, uninstall: true) {
-        /*section("Temperature Scale") {
-            input "scale", "bool", title: "Use Centigrade Scale", defaultValue: true
-        }*/
         section("Devices") {
         }
         section {
@@ -31,17 +28,5 @@ def updated() {
 	initialize()
 }
 
-def updateChildTempScales() {
-    def children = getChildApps()
-    children.each { child ->
-        child.updateTempScale()
-    }
-}
-
 def initialize() {
-    updateChildTempScales()
-}
-
-def getTempScale() {
-    return scale ? "C" : "F"
 }
