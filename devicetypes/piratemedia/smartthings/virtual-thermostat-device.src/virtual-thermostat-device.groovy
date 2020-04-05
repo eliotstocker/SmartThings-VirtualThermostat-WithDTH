@@ -6,7 +6,6 @@ metadata {
     vid: "generic-thermostat-1",
     executeCommandsLocally: true,
     ocfDeviceType: "oic.d.thermostat") {
-        capability "Actuator"
 		capability "Temperature Measurement"
 		capability "Thermostat"
 		capability "Thermostat Mode"
@@ -14,7 +13,6 @@ metadata {
 		capability "Thermostat Operating State"
 		capability "Configuration"
 		capability "Refresh"
-		capability "Sensor"
 
 		command "refresh"
 		command "poll"
@@ -120,14 +118,13 @@ metadata {
 }
 
 def shouldReportInCentigrade() {
-    //there is no way to do this dynamically right now, a number of the functions that call this function are compile time evaluated :(
-	return true //Set this to true for Centigrade, false for Fahrenheit  so that enums and colors are correct (due to ST issue of compile time evaluation)
-	/*try {
+	try {
     	def ts = getTemperatureScale();
-    	retVal = ts == "C"
-    } finally {
-		return retVal
-    }*/
+    	return ts == "C"
+    } catch (e) {
+    	log.error e
+    }
+    return true;
 }
 
 def installed() {
@@ -142,12 +139,11 @@ def configure() {
 
 private initialize() {
     log.trace "Executing 'initialize'"
-
-    sendEvent(name:"temperature",                 value: defaultTemp(), unit: unitString(), displayed: false)
-    sendEvent(name:"thermostatSetpoint",          value: defaultTemp(), unit: unitString(), displayed: false)
-    sendEvent(name:"heatingSetpoint",             value: defaultTemp(), unit: unitString(), displayed: false)
-  	sendEvent(name:"thermostatOperatingState",    value: "off")
-    sendEvent(name:"thermostatMode",              value: "off")
+    
+    setHeatingSetpoint(defaultTemp())
+    setVirtualTemperature(defaultTemp())
+    setHeatingStatus("off")
+    setThermostatMode("off")
     sendEvent(name:"supportedThermostatModes",    value: ['heat', 'off'], displayed: false)
     sendEvent(name:"supportedThermostatFanModes", values: [], displayed: false)
     
@@ -185,7 +181,7 @@ def getTempColors() {
 def unitString() {  return shouldReportInCentigrade() ? "C": "F" }
 def defaultTemp() { return shouldReportInCentigrade() ? 20 : 70 }
 def lowRange() { return shouldReportInCentigrade() ? 9 : 45 }
-def highRange() { return shouldReportInCentigrade() ? 32 : 90 }
+def highRange() { return shouldReportInCentigrade() ? 45 : 113 }
 def getRange() { return "${lowRange()}..${highRange()}" }
 
 def getTemperature() {
@@ -193,11 +189,13 @@ def getTemperature() {
 }
 
 def setHeatingSetpoint(temp) {
-    log.debug "setting temp to: $temp"
-	sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString())
-	sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
-	refresh()
-	runIn(10, refresh)
+	def ctsp = device.currentValue("thermostatSetpoint");
+    def chsp = device.currentValue("heatingSetpoint");
+
+    if(ctsp != temp || chsp != temp) {
+        sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
+        sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
+    }
 }
 
 def heatingSetpointUp() {
@@ -230,14 +228,8 @@ def parse(data) {
 
 def refresh() {
     log.trace "Executing refresh"
-    sendEvent(name: "thermostatMode",              value: getThermostatMode())
-    sendEvent(name: "thermostatOperatingState",    value: getOperatingState())
-    sendEvent(name: "thermostatSetpoint",          value: getThermostatSetpoint(), unit: unitString())
-    sendEvent(name: "heatingSetpoint",             value: getHeatingSetpoint(), unit: unitString())
-    sendEvent(name: "temperature",                 value: getTemperature(), unit: unitString())
     sendEvent(name: "supportedThermostatModes",    value: ['heat', 'off'], displayed: false)
     sendEvent(name: "supportedThermostatFanModes", values: [], displayed: false)
-    done()
 }
 
 def getThermostatMode() {
@@ -283,16 +275,11 @@ def changeMode() {
 }
 
 def setVirtualTemperature(temp) {
-	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: false)
+	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: true)
 }
 
 def setHeatingStatus(string) {
 	if(device.currentValue("thermostatOperatingState") != string) {
 		sendEvent(name:"thermostatOperatingState", value: string)
     }
-}
-
-def setTemperatureScale(val) {
-	log.debug "set temp scale to: $val"
-	sendEvent(name:"tempScale", value: val, displayed: false)
 }
