@@ -49,7 +49,7 @@ def createDevice() {
 
 def shouldHeatingBeOn(thermostat) {    
     //if temperature is bellow emergency setpoint
-    if(emergencySetpoint > getAverageTemperature()) {
+    if(emergencySetpoint && emergencySetpoint > getAverageTemperature()) {
     	return true;
     }
     
@@ -68,7 +68,7 @@ def shouldHeatingBeOn(thermostat) {
     }
     
     //average temperature across all temperateure sensors is above set point
-    if (thermostat.currentValue("thermostatSetpoint") - getAverageTemperature() >= threshold) {
+    if (thermostat.currentValue("heatingSetpoint") - getAverageTemperature() <= threshold) {
     	return false;
     }
     
