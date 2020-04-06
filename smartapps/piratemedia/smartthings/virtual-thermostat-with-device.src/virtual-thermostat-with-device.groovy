@@ -96,7 +96,7 @@ def getHeatingStatus(thermostat) {
     }
     
     //average temperature across all temperateure sensors is above set point
-    if (thermostat.currentValue("thermostatSetpoint") - getAverageTemperature() >= threshold) {
+    if (thermostat.currentValue("thermostatSetpoint") - getAverageTemperature() <= threshold) {
     	return 'idle';
     }
     
