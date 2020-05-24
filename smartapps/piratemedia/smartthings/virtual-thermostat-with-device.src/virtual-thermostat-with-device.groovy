@@ -16,6 +16,9 @@ preferences {
 	section("Select the heater outlet(s)... "){
 		input "heating_outlets", "capability.switch", title: "Heating Outlets", multiple: true
 	}
+    section("Select the cooling outlet(s)... "){
+        input "cooling_outlets", "capability.switch", title: "Cooling Outlets", multiple: true
+    }
 	section("Only heat when contact(s) arent open (optional, leave blank to not require contact sensor)..."){
 		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
 	}
