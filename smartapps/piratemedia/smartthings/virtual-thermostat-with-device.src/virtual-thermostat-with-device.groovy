@@ -23,8 +23,11 @@ preferences {
 		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
 	}
 	section("Never go below this temperature: (optional)"){
-		input "emergencySetpoint", "decimal", title: "Emergency Temp", required: false
+		input "emergencyHeatingSetpoint", "decimal", title: "Emergency Min Temp", required: false
 	}
+    section("Never go above this temperature: (optional)"){
+        input "emergencyCoolingSetpoint", "decimal", title: "Emergency Max Temp", required: false
+    }
 	section("Temperature Threshold (Don't allow heating to go above or bellow this amount from set temperature)") {
 		input "threshold", "decimal", title: "Temperature Threshold", required: false, defaultValue: 1.0
 	}
@@ -52,7 +55,7 @@ def createDevice() {
 
 def shouldHeatingBeOn(thermostat) {    
     //if temperature is bellow emergency setpoint
-    if(emergencySetpoint && emergencySetpoint > getAverageTemperature()) {
+    if(emergencyHeatingSetpoint && emergencyHeatingSetpoint > getAverageTemperature()) {
     	return true;
     }
     
@@ -78,9 +81,37 @@ def shouldHeatingBeOn(thermostat) {
     return true;
 }
 
+def shouldCoolingBeOn(thermostat) {    
+    //if temperature is above emergency setpoint
+    if(emergencyCoolingSetpoint && emergencyCoolingSetpoint < getAverageTemperature()) {
+        return true;
+    }
+    
+    //if thermostat isnt set to heat
+    if(thermostat.currentValue('thermostatMode') != "cool") {
+        return false;
+    }
+    
+    //if any of the contact sensors are open
+    if(motion) {
+        for(m in motion) {
+            if(m.currentValue('contact') == "open") {
+                return false;
+            }
+        }
+    }
+    
+    //average temperature across all temperateure sensors is above set point
+    if (getAverageTemperature() - thermostat.currentValue("thermostatSetpoint") <= threshold) {
+        return false;
+    }
+    
+    return true;    
+}
+
 def getHeatingStatus(thermostat) {    
     //if temperature is bellow emergency setpoint
-    if(emergencySetpoint > getAverageTemperature()) {
+    if(emergencyHeatingSetpoint > getAverageTemperature()) {
     	return 'heating';
     }
     
@@ -106,6 +137,34 @@ def getHeatingStatus(thermostat) {
     return 'heat';
 }
 
+def getCoolingStatus(thermostat) {    
+    //if temperature is above emergency setpoint
+    if(emergencyCoolingSetpoint > getAverageTemperature()) {
+        return 'cooling';
+    }
+    
+    //if thermostat isnt set to cool
+    if(thermostat.currentValue('thermostatMode') != "cool") {
+        return 'idle';
+    }
+    
+    //if any of the contact sensors are open
+    if(motion) {
+        for(m in motion) {
+            if(m.currentValue('contact') == "open") {
+                return 'pending cool';
+            }
+        }
+    }
+    
+    //average temperature across all temperateure sensors is above set point
+    if (getAverageTemperature() - thermostat.currentValue("thermostatSetpoint") <= threshold) {
+        return 'idle';
+    }
+    
+    return 'cool';
+}
+
 def getAverageTemperature() {
 	def total = 0;
     def count = 0;
@@ -122,19 +181,39 @@ def getAverageTemperature() {
 }
 
 def handleChange() {
-	def thermostat = getThermostat()
+    def thermostat = getThermostat()
 
-	//update device
+    //update device
     thermostat.setHeatingStatus(getHeatingStatus(thermostat))
+    thermostat.setCoolingStatus(getCoolingStatus(thermostat))
     thermostat.setVirtualTemperature(getAverageTemperature())
+
+    if(thermostat.currentValue('thermostatMode') == "off") {
+        heating_outlets.off()
+        cooling_outlets.off()
+    }
+
+    if(thermostat.currentValue('thermostatMode') == "heat") {
+        //set heater outlet
+        if(shouldHeatingBeOn(thermostat)) {
+            heating_outlets.on()
+            cooling_outlets.off()
+        } else {
+            heating_outlets.off()
+        }
+    }
     
-    //set heater outlet
-    if(shouldHeatingBeOn(thermostat)) {
-    	heating_outlets.on()
-    } else {
-    	heating_outlets.off()
+    if(thermostat.currentValue('thermostatMode') == "cool") {
+        //set cooler outlet
+        if(shouldCoolingBeOn(thermostat)) {
+            cooling_outlets.on()
+            heating_outlets.off()
+        } else {
+            cooling_outlets.off()
+        }
     }
 }
+
 
 def getThermostat() {
 	def child = getChildDevices().find {
