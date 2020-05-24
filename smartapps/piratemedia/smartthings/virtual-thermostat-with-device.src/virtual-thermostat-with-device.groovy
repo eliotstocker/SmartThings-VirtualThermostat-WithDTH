@@ -14,7 +14,7 @@ preferences {
 		input "sensors", "capability.temperatureMeasurement", title: "Sensor", multiple: true
 	}
 	section("Select the heater outlet(s)... "){
-		input "outlets", "capability.switch", title: "Outlets", multiple: true
+		input "heating_outlets", "capability.switch", title: "Heating Outlets", multiple: true
 	}
 	section("Only heat when contact(s) arent open (optional, leave blank to not require contact sensor)..."){
 		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
@@ -127,9 +127,9 @@ def handleChange() {
     
     //set heater outlet
     if(shouldHeatingBeOn(thermostat)) {
-    	outlets.on()
+    	heating_outlets.on()
     } else {
-    	outlets.off()
+    	heating_outlets.off()
     }
 }
 
