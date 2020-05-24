@@ -1,7 +1,7 @@
 metadata {
 	definition (name: "Virtual Thermostat Device",
     namespace: "piratemedia/smartthings",
-    author: "Eliot S.",
+    author: "Eliot S. + Steffen N.",
     mnmn: "SmartThings", 
     vid: "generic-thermostat-1",
     executeCommandsLocally: true,
