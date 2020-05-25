@@ -108,7 +108,7 @@ metadata {
             state("auto", icon: "https://raw.githubusercontent.com/steffennissen/SmartThings-VirtualThermostat-WithDTH/master/images/auto_on.png")
 		}
 
-		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
+		standardTile("refresh", "device.refresh", width:1, height:1, decoration: "flat") {
 			state "Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
@@ -163,9 +163,10 @@ metadata {
                   "autoBtn", "offBtn", 
                   //"thermostatMode", 
 				  "heatingSetpointDown",
-				  //"heatSliderControl", "refresh",
+				  //"heatSliderControl", 
 				  "coolingSetpointDown", 
 				  //"coolSliderControl"
+                  "refresh"
                 ] )
 	}
 }
@@ -199,10 +200,11 @@ private initialize() {
     
     setHeatingSetpoint(defaultTemp())
 	setCoolingSetpoint(defaultTemp())
+	setThermostatSetpoint(defaultTemp())
     setVirtualTemperature(defaultTemp())
 	setThermostatOperatingState("idle")
     setThermostatMode("off")
-    sendEvent(name:"supportedThermostatModes",    value: thermostatModes(), displayed: false)
+    sendEvent(name:"supportedThermostatModes", value: thermostatModes(), displayed: false)
 
 	state.tempScale = "C"
 }
@@ -246,11 +248,11 @@ def getTemperature() {
 }
 
 def setThermostatSetpoint(temp) {
-	log.debug "setThermostatSetpoint: " + temp
 	def ctsp = device.currentValue("thermostatSetpoint");
 
+	log.debug "setThermostatSetpoint from " + ctsp + " to " + temp
 	if(ctsp != temp) {
-		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
+		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString())
 	}
 }
 
@@ -315,7 +317,7 @@ def parse(data) {
 
 def refresh() {
     log.trace "Executing refresh"
-    sendEvent(name: "supportedThermostatModes",    value: thermostatModes(), displayed: false)
+    configure()
 }
 
 def getThermostatMode() {
