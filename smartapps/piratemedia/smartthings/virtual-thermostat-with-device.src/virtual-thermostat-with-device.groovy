@@ -109,62 +109,6 @@ def shouldCoolingBeOn(thermostat) {
     return true;    
 }
 
-def getHeatingStatus(thermostat) {    
-    //if temperature is bellow emergency setpoint
-    if(emergencyHeatingSetpoint > getAverageTemperature()) {
-    	return 'heating';
-    }
-    
-	//if thermostat isnt set to heat
-	if(thermostat.currentValue('thermostatMode') != "heat") {
-    	return 'idle';
-    }
-    
-    //if any of the contact sensors are open
-    if(motion) {
-    	for(m in motion) {
-			if(m.currentValue('contact') == "open") {
-            	return 'pending heat';
-            }
-        }
-    }
-    
-    //average temperature across all temperateure sensors is above set point
-    if (thermostat.currentValue("thermostatSetpoint") - getAverageTemperature() <= threshold) {
-    	return 'idle';
-    }
-    
-    return 'heat';
-}
-
-def getCoolingStatus(thermostat) {    
-    //if temperature is above emergency setpoint
-    if(emergencyCoolingSetpoint > getAverageTemperature()) {
-        return 'cooling';
-    }
-    
-    //if thermostat isnt set to cool
-    if(thermostat.currentValue('thermostatMode') != "cool") {
-        return 'idle';
-    }
-    
-    //if any of the contact sensors are open
-    if(motion) {
-        for(m in motion) {
-            if(m.currentValue('contact') == "open") {
-                return 'pending cool';
-            }
-        }
-    }
-    
-    //average temperature across all temperature sensors is above set point
-    if (getAverageTemperature() - thermostat.currentValue("thermostatSetpoint") <= threshold) {
-        return 'idle';
-    }
-    
-    return 'cool';
-}
-
 def getAverageTemperature() {
 	def total = 0;
     def count = 0;
@@ -184,14 +128,14 @@ def cool() {
     log.debug "cooling outlets on"
     cooling_outlets.on()
     heating_outlets.off()
-    thermostat.setThermostatOperatingState('cool')
+    thermostat.setThermostatOperatingState('cooling')
 }
 
 def heat() {
     log.debug "heating outlets on"
     cooling_outlets.off()
     heating_outlets.on()
-    thermostat.setThermostatOperatingState('heat')
+    thermostat.setThermostatOperatingState('heating')
 }
 
 def off() {
@@ -272,6 +216,9 @@ def updated()
     
     //subscribe to virtual device changes
     subscribe(thermostat, "thermostatSetpoint", thermostatTemperatureHandler)
+    subscribe(thermostat, "heatingSetpoint", thermostatTemperatureHandler)
+    subscribe(thermostat, "coolingSetpoint", thermostatTemperatureHandler)
+
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
     
     //reset some values

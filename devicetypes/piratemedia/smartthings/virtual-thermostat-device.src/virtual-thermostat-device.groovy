@@ -47,12 +47,11 @@ metadata {
 			}
             
 			tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
-				attributeState("default", action: "levelUpDown")
 				attributeState("VALUE_UP", action: "levelUp")
 				attributeState("VALUE_DOWN", action: "levelDown")
 			}
             
-			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {iuj
 				// valid values are thermostatOperatingState — ["heating", "idle", "pending cool", "vent economizer", "cooling", "pending heat", "fan only"]
 				// https://graph.api.smartthings.com/ide/doc/capabilities
 				attributeState("idle",		    backgroundColor: "#44B621")
@@ -69,11 +68,11 @@ metadata {
 				attributeState("off", label:'Off')
 			}
             
-			tileAttribute("device.thermostatSetpoint", key: "HEATING_SETPOINT") {
+			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
 			}
 
-			tileAttribute("device.thermostatSetpoint", key: "COOLING_SETPOINT") {
+			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
 			}
 		}
@@ -83,7 +82,7 @@ metadata {
 					backgroundColors: getTempColors(), canChangeIcon: true)
 		}
         
-		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, decoration: "flat") {
+		standardTile("thermostatMode", "device.thermostatMode", width:2, height:1, decoration: "flat") {
 			state("off", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_icon.png")
 			state("heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_heat.png")
 			state("cool", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_cool.png")
@@ -161,9 +160,9 @@ metadata {
 		details( ["temperature", "thermostatMode", 
 				  "coolBtn", "heatBtn", "autoBtn", "offBtn",
 				  "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				  "heatSliderControl", "refresh",
-				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp","coolBtn",
-				  "coolSliderControl"
+				  //"heatSliderControl", "refresh",
+				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
+				  //"coolSliderControl"
                 ] )
 	}
 }
@@ -251,6 +250,7 @@ def setHeatingSetpoint(temp) {
     if(ctsp != temp || chsp != temp) {
         sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
         sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
+        sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
     }
 }
 
@@ -273,6 +273,7 @@ def setCoolingSetpoint(temp) {
 	if(ctsp != temp || ccsp != temp) {
 		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
 		sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
+		sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
 	}
 }
 
