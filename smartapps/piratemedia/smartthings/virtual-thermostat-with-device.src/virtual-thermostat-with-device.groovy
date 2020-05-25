@@ -19,7 +19,7 @@ preferences {
     section("Select the cooling outlet(s)... "){
         input "cooling_outlets", "capability.switch", title: "Cooling Outlets", multiple: true
     }
-	section("Only heat when contact(s) arent open (optional, leave blank to not require contact sensor)..."){
+	section("Only heat/cool when contact(s) arent open (optional, leave blank to not require contact sensor)..."){
 		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
 	}
 	section("Never go below this temperature: (optional)"){
@@ -28,7 +28,7 @@ preferences {
     section("Never go above this temperature: (optional)"){
         input "emergencyCoolingSetpoint", "decimal", title: "Emergency Max Temp", required: false
     }
-	section("Temperature Threshold (Don't allow heating to go above or bellow this amount from set temperature)") {
+	section("Temperature Threshold (Don't allow heating/cooling to go above or bellow this amount from set temperature)") {
 		input "threshold", "decimal", title: "Temperature Threshold", required: false, defaultValue: 1.0
 	}
 }
@@ -60,7 +60,7 @@ def shouldHeatingBeOn(thermostat) {
     }
     
 	//if thermostat isnt set to heat
-	if(thermostat.currentValue('thermostatMode') != "heat") {
+	if(thermostat.currentValue('thermostatMode') != "heat" && thermostat.currentValue('thermostatMode') != "auto") {
     	return false;
     }
     
@@ -87,8 +87,8 @@ def shouldCoolingBeOn(thermostat) {
         return true;
     }
     
-    //if thermostat isnt set to heat
-    if(thermostat.currentValue('thermostatMode') != "cool") {
+    //if thermostat isnt set to cool
+    if(thermostat.currentValue('thermostatMode') != "cool" && thermostat.currentValue('thermostatMode') != "auto") {
         return false;
     }
     
@@ -180,6 +180,24 @@ def getAverageTemperature() {
     return total / count
 }
 
+def cool() {
+    log.debug "cooling outlets on"
+    cooling_outlets.on()
+    heating_outlets.off()
+}
+
+def heat() {
+    log.debug "heating outlets on"
+    cooling_outlets.off()
+    heating_outlets.on()
+}
+
+def off() {
+    log.debug "all outlets off"
+    cooling_outlets.off()
+    heating_outlets.off()
+}
+
 def handleChange() {
     def thermostat = getThermostat()
 
@@ -190,37 +208,31 @@ def handleChange() {
 
     switch (thermostat.currentValue('thermostatMode')){
         case "heat":
-            cooling_outlets.off()
             if(shouldHeatingBeOn(thermostat)) {
-                heating_outlets.on()
+                heat()
             } else {
-                heating_outlets.off()
+                off()
             }
             break
         case "cool":
-            heating_outlets.off()
             if(shouldCoolingBeOn(thermostat)) {
-                cooling_outlets.on()
+                cool()
             } else {
-                cooling_outlets.off()
+                off()
             }
             break
         case "auto":
             if(shouldCoolingBeOn(thermostat)) {
-                cooling_outlets.on()
-                heating_outlets.off()
+                cool()
             } else if(shouldHeatingBeOn(thermostat)) {
-                heating_outlets.on()
-                cooling_outlets.off()
+                heat()
             } else {
-                heating_outlets.off()
-                cooling_outlets.off()
+                off()
             }
             break
         case "off":
         default:
-            heating_outlets.off()
-            cooling_outlets.off()
+            off()
             break
     }
 }
