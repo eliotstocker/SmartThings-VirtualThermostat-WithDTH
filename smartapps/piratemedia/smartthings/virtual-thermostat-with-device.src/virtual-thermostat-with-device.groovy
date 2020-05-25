@@ -225,7 +225,7 @@ def updated()
 	}
     
     //subscribe to virtual device changes
-    subscribe(thermostat, "thermostatSetpoint", thermostatTemperatureHandler)
+    subscribe(thermostat, "thermostatSetpoint", thermostatSetPointHandler)
     subscribe(thermostat, "heatingSetpoint", thermostatTemperatureHandler)
     subscribe(thermostat, "coolingSetpoint", thermostatTemperatureHandler)
 
@@ -234,6 +234,11 @@ def updated()
     //reset some values
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
+}
+
+def thermostatSetPointHandler(evt) {
+    log.debug "thermostatSetPointHandler" + evt
+    handleChange()
 }
 
 def temperatureHandler(evt) {
