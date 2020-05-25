@@ -184,18 +184,21 @@ def cool() {
     log.debug "cooling outlets on"
     cooling_outlets.on()
     heating_outlets.off()
+    thermostat.setThermostatOperatingState('cool')
 }
 
 def heat() {
     log.debug "heating outlets on"
     cooling_outlets.off()
     heating_outlets.on()
+    thermostat.setThermostatOperatingState('heat')
 }
 
 def off() {
     log.debug "all outlets off"
     cooling_outlets.off()
     heating_outlets.off()
+    thermostat.setThermostatOperatingState('idle')
 }
 
 def handleChange() {
@@ -211,7 +214,6 @@ def handleChange() {
             } else {
                 off()
             }
-            thermostat.setHeatingStatus(getHeatingStatus(thermostat))
             break
         case "cool":
             if(shouldCoolingBeOn(thermostat)) {
@@ -219,7 +221,6 @@ def handleChange() {
             } else {
                 off()
             }
-            thermostat.setCoolingStatus(getCoolingStatus(thermostat))
             break
         case "auto":
             if(shouldCoolingBeOn(thermostat)) {
@@ -229,14 +230,10 @@ def handleChange() {
             } else {
                 off()
             }
-            thermostat.setHeatingStatus(getHeatingStatus(thermostat))
-            thermostat.setCoolingStatus(getCoolingStatus(thermostat))
             break
         case "off":
         default:
             off()
-            thermostat.setHeatingStatus(getHeatingStatus(thermostat))
-            thermostat.setCoolingStatus(getCoolingStatus(thermostat))
             break
     }
 }

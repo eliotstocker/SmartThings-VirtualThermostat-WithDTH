@@ -53,12 +53,13 @@ metadata {
 			}
             
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
+				// valid values are thermostatOperatingState — ["heating", "idle", "pending cool", "vent economizer", "cooling", "pending heat", "fan only"]
+				// https://graph.api.smartthings.com/ide/doc/capabilities
 				attributeState("idle",		    backgroundColor: "#44B621")
-				attributeState("heating",	    backgroundColor: "#FFA81E")
-				attributeState("cooling",	    backgroundColor: "#1eceff")
-				attributeState("off",		    backgroundColor: "#ddcccc")
-				attributeState("pending heat",	backgroundColor: "#e60000")
-				attributeState("pending cool",	backgroundColor: "#0022e6")
+				attributeState("heating",	    backgroundColor: "#d4852a")
+				attributeState("cooling",	    backgroundColor: "#2a8ad4")
+				attributeState("pending heat",	backgroundColor: "#ffd19c")
+				attributeState("pending cool",	backgroundColor: "#85b3d6")
 			}
             
 			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
@@ -197,8 +198,7 @@ private initialize() {
     setHeatingSetpoint(defaultTemp())
 	setCoolingSetpoint(defaultTemp())
     setVirtualTemperature(defaultTemp())
-    setHeatingStatus("off")
-	setCoolingStatus("off")
+	setThermostatOperatingState("idle")
     setThermostatMode("off")
     sendEvent(name:"supportedThermostatModes",    value: thermostatModes(), displayed: false)
     sendEvent(name:"supportedThermostatFanModes", values: [], displayed: false)
@@ -371,14 +371,8 @@ def setVirtualTemperature(temp) {
 	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: true)
 }
 
-def setHeatingStatus(string) {
+def setThermostatOperatingState(string) {
 	if(device.currentValue("thermostatOperatingState") != string) {
 		sendEvent(name:"thermostatOperatingState", value: string)
     }
-}
-
-def setCoolingStatus(string) {
-	if(device.currentValue("thermostatOperatingState") != string) {
-		sendEvent(name:"thermostatOperatingState", value: string)
-	}
 }
