@@ -131,8 +131,9 @@ metadata {
         
 		details( ["temperature", "thermostatMode", 
         		"coolBtn", "heatBtn", "autoBtn", "offBtn",
-				"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				"heatSliderControl", "refresh"] )
+				//"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
+				//"heatSliderControl", "refresh"
+                ] )
 	}
 }
 
