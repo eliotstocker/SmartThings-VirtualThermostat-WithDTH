@@ -82,7 +82,7 @@ metadata {
 					backgroundColors: getTempColors(), canChangeIcon: true)
 		}
         
-		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, decoration: "flat") {
+		standardTile("thermostatMode", "device.thermostatMode", width:2, height:1, decoration: "flat") {
 			state("off", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_icon.png")
 			state("heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_heat.png")
 			state("cool", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_cool.png")
@@ -160,9 +160,9 @@ metadata {
 		details( ["temperature", "thermostatMode", 
 				  "coolBtn", "heatBtn", "autoBtn", "offBtn",
 				  "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				  "heatSliderControl", "refresh",
-				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp","coolBtn",
-				  "coolSliderControl"
+				  //"heatSliderControl", "refresh",
+				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp",
+				  //"coolSliderControl"
                 ] )
 	}
 }
