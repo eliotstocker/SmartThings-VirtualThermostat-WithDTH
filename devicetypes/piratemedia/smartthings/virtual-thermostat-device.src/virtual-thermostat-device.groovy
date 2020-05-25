@@ -22,17 +22,14 @@ metadata {
 		command "coolbtn"
 		command "heatbtn"
 		command "autobtn"
-		command "levelUpDown"
 		command "levelUp"
 		command "levelDown"
 		command "heatingSetpointUp"
 		command "heatingSetpointDown"
 		command "coolingSetpointUp"
 		command "coolingSetpointDown"
-		command "changeMode"
 		command "setVirtualTemperature", ["number"]
-		command "setHeatingStatus", ["string"]
-        
+
 		attribute "temperatureUnit", "string"
 	}
 
@@ -172,7 +169,7 @@ metadata {
 }
 
 def thermostatModes() { 
-	['cool', 'heat', 'auto', 'off']
+	return ['cool', 'heat', 'auto', 'off']
 }
 
 def shouldReportInCentigrade() {
@@ -204,8 +201,7 @@ private initialize() {
 	setThermostatOperatingState("idle")
     setThermostatMode("off")
     sendEvent(name:"supportedThermostatModes",    value: thermostatModes(), displayed: false)
-    sendEvent(name:"supportedThermostatFanModes", values: [], displayed: false)
-    
+
 	state.tempScale = "C"
 }
 
@@ -315,7 +311,6 @@ def parse(data) {
 def refresh() {
     log.trace "Executing refresh"
     sendEvent(name: "supportedThermostatModes",    value: thermostatModes(), displayed: false)
-    sendEvent(name: "supportedThermostatFanModes", values: [], displayed: false)
 }
 
 def getThermostatMode() {
@@ -362,9 +357,6 @@ def setThermostatMode(mode) {
 	if(device.currentValue("thermostatMode") != mode) {
     	sendEvent(name: "thermostatMode", value: mode)
     }
-}
-
-def levelUpDown() {
 }
 
 def setVirtualTemperature(temp) {
