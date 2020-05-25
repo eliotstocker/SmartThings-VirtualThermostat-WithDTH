@@ -53,28 +53,36 @@ def createDevice() {
     return thermostat
 }
 
+def motionDetected(){
+    if(motion) {
+        for(m in motion) {
+            if(m.currentValue('contact') == "open") {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 def shouldHeatingBeOn(thermostat) {    
     //if temperature is below emergency setpoint
     if(emergencyHeatingSetpoint && emergencyHeatingSetpoint > getAverageTemperature()) {
     	return true;
     }
     
-	//if thermostat isnt set to heat
+	//if thermostat isn't set to heat
 	if(thermostat.currentValue('thermostatMode') != "heat" && thermostat.currentValue('thermostatMode') != "auto") {
     	return false;
     }
     
     //if any of the contact sensors are open
-    if(motion) {
-    	for(m in motion) {
-			if(m.currentValue('contact') == "open") {
-            	return false;
-            }
-        }
+    if(motionDetected()){
+        return false;
     }
-    
+
     //average temperature across all temperature sensors is above set point
-    if (thermostat.currentValue("heatingSetpoint") - getAverageTemperature() <= threshold) {
+    if (thermostat.currentValue("heatingSetpoint") < getAverageTemperature()) {
     	return false;
     }
     
@@ -87,22 +95,18 @@ def shouldCoolingBeOn(thermostat) {
         return true;
     }
     
-    //if thermostat isnt set to cool
+    //if thermostat isn't set to cool
     if(thermostat.currentValue('thermostatMode') != "cool" && thermostat.currentValue('thermostatMode') != "auto") {
         return false;
     }
     
     //if any of the contact sensors are open
-    if(motion) {
-        for(m in motion) {
-            if(m.currentValue('contact') == "open") {
-                return false;
-            }
-        }
+    if(motionDetected()){
+        return false;
     }
     
     //average temperature across all temperature sensors is below set point
-    if (getAverageTemperature() - thermostat.currentValue("coolingSetpoint") <= threshold) {
+    if (thermostat.currentValue("coolingSetpoint") < getAverageTemperature()) {
         return false;
     }
     
