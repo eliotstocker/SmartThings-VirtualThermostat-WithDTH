@@ -106,7 +106,7 @@ def shouldCoolingBeOn(thermostat) {
     }
     
     //average temperature across all temperature sensors is below set point
-    if (thermostat.currentValue("coolingSetpoint") < getAverageTemperature()) {
+    if (thermostat.currentValue("coolingSetpoint") > getAverageTemperature()) {
         return false;
     }
     
