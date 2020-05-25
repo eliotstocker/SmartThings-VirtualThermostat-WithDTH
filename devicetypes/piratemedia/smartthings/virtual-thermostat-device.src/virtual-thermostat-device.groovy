@@ -288,6 +288,7 @@ def autobtn() {
 }
 
 def setThermostatMode(mode) {
+	log.trace "setting thermostat mode $mode"
 	if(device.currentValue("thermostatMode") != mode) {
     	sendEvent(name: "thermostatMode", value: mode)
     }

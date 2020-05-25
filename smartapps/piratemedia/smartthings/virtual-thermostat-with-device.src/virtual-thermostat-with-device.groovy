@@ -278,13 +278,11 @@ def updated()
     thermostat.setVirtualTemperature(getAverageTemperature())
 }
 
-def temperatureHandler(evt)
-{
+def temperatureHandler(evt) {
     handleChange()
 }
 
-def motionHandler(evt)
-{
+def motionHandler(evt) {
     handleChange()
 }
 
