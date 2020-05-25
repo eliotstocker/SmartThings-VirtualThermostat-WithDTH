@@ -235,6 +235,8 @@ def handleChange() {
         case "off":
         default:
             off()
+            thermostat.setHeatingStatus(getHeatingStatus(thermostat))
+            thermostat.setCoolingStatus(getCoolingStatus(thermostat))
             break
     }
 }
