@@ -147,6 +147,12 @@ def off() {
 
 def handleChange() {
     def thermostat = getThermostat()
+    log.debug "handle change, mode: " + thermostat.currentValue('thermostatMode') + 
+    	", temp: " + getAverageTemperature() + 
+        ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
+        ", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
+        ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
+
 
     //update device
     thermostat.setVirtualTemperature(getAverageTemperature())
