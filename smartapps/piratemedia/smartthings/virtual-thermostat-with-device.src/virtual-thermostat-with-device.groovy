@@ -188,29 +188,40 @@ def handleChange() {
     thermostat.setCoolingStatus(getCoolingStatus(thermostat))
     thermostat.setVirtualTemperature(getAverageTemperature())
 
-    if(thermostat.currentValue('thermostatMode') == "off") {
-        heating_outlets.off()
-        cooling_outlets.off()
-    }
-
-    if(thermostat.currentValue('thermostatMode') == "heat") {
-        //set heater outlet
-        if(shouldHeatingBeOn(thermostat)) {
-            heating_outlets.on()
+    switch (thermostat.currentValue('thermostatMode')){
+        case "heat":
             cooling_outlets.off()
-        } else {
+            if(shouldHeatingBeOn(thermostat)) {
+                heating_outlets.on()
+            } else {
+                heating_outlets.off()
+            }
+            break
+        case "cool":
             heating_outlets.off()
-        }
-    }
-    
-    if(thermostat.currentValue('thermostatMode') == "cool") {
-        //set cooler outlet
-        if(shouldCoolingBeOn(thermostat)) {
-            cooling_outlets.on()
+            if(shouldCoolingBeOn(thermostat)) {
+                cooling_outlets.on()
+            } else {
+                cooling_outlets.off()
+            }
+            break
+        case "auto":
+            if(shouldCoolingBeOn(thermostat)) {
+                cooling_outlets.on()
+                heating_outlets.off()
+            } else if(shouldHeatingBeOn(thermostat)) {
+                heating_outlets.on()
+                cooling_outlets.off()
+            } else {
+                heating_outlets.off()
+                cooling_outlets.off()
+            }
+            break
+        case "off":
+        default:
             heating_outlets.off()
-        } else {
             cooling_outlets.off()
-        }
+            break
     }
 }
 
