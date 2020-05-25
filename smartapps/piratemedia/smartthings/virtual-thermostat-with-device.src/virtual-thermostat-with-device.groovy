@@ -19,7 +19,7 @@ preferences {
     section("Select the cooling outlet(s)... "){
         input "cooling_outlets", "capability.switch", title: "Cooling Outlets", multiple: true
     }
-	section("Only heat/cool when contact(s) arent open (optional, leave blank to not require contact sensor)..."){
+	section("Only heat/cool when contact(s) aren't open (optional, leave blank to not require contact sensor)..."){
 		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
 	}
 	section("Never go below this temperature: (optional)"){

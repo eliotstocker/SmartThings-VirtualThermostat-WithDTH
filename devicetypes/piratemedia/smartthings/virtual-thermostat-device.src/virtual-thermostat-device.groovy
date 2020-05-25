@@ -236,8 +236,8 @@ def getTempColors() {
 }
 
 def unitString() {  return shouldReportInCentigrade() ? "C": "F" }
-def defaultTemp() { return shouldReportInCentigrade() ? 20 : 70 }
-def lowRange() { return shouldReportInCentigrade() ? 9 : 45 }
+def defaultTemp() { return shouldReportInCentigrade() ? 23 : 73 }
+def lowRange() { return shouldReportInCentigrade() ? 7 : 45 }
 def highRange() { return shouldReportInCentigrade() ? 45 : 113 }
 def getRange() { return "${lowRange()}..${highRange()}" }
 
@@ -245,51 +245,54 @@ def getTemperature() {
 	return device.currentValue("temperature")
 }
 
+def setThermostatSetpoint(temp) {
+	log.debug "setThermostatSetpoint: " + temp
+	def ctsp = device.currentValue("thermostatSetpoint");
+
+	if(ctsp != temp) {
+		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
+	}
+}
+
 def setHeatingSetpoint(temp) {
 	log.debug "setHeatingSetpoint: " + temp
-	def ctsp = device.currentValue("thermostatSetpoint");
     def chsp = device.currentValue("heatingSetpoint");
 
-    if(ctsp != temp || chsp != temp) {
-        sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
+    if(chsp != temp) {
         sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
-        sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
     }
 }
 
 def heatingSetpointUp() {
-	def hsp = device.currentValue("thermostatSetpoint")
+	def hsp = device.currentValue("heatingSetpoint")
 	if(hsp + 1.0 > highRange()) return;
 	setHeatingSetpoint(hsp + 1.0)
 }
 
 def heatingSetpointDown() {
-	def hsp = device.currentValue("thermostatSetpoint")
+	def hsp = device.currentValue("heatingSetpoint")
 	if(hsp - 1.0 < lowRange()) return;
 	setHeatingSetpoint(hsp - 1.0)
 }
 
 def setCoolingSetpoint(temp) {
-	log.debug "setHeatingSetpoint: " + temp
+	log.debug "setCoolingSetpoint: " + temp
 
-	def ctsp = device.currentValue("thermostatSetpoint");
 	def ccsp = device.currentValue("coolingSetpoint");
 
-	if(ctsp != temp || ccsp != temp) {
-		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
+	if(ccsp != temp) {
 		sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
-		sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
 	}
 }
 
 def coolingSetpointUp() {
-	def csp = device.currentValue("thermostatSetpoint")
+	def csp = device.currentValue("coolingSetpoint")
 	if(csp + 1.0 > highRange()) return;
 	setCoolingSetpoint(csp + 1.0)
 }
 
 def coolingSetpointDown() {
-	def csp = device.currentValue("thermostatSetpoint")
+	def csp = device.currentValue("coolingSetpoint")
 	if(csp - 1.0 < lowRange()) return;
 	setCoolingSetpoint(csp - 1.0)
 }
@@ -297,13 +300,13 @@ def coolingSetpointDown() {
 def levelUp() {
 	def hsp = device.currentValue("thermostatSetpoint")
 	if(hsp + 1.0 > highRange()) return;
-    setHeatingSetpoint(hsp + 1.0)
+    setThermostatSetpoint(hsp + 1.0)
 }
 
 def levelDown() {
     def hsp = device.currentValue("thermostatSetpoint")
 	if(hsp - 1.0 < lowRange()) return;
-    setHeatingSetpoint(hsp - 1.0)
+	setThermostatSetpoint(hsp - 1.0)
 }
 
 def parse(data) {
