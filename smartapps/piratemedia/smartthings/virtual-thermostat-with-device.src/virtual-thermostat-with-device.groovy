@@ -202,8 +202,6 @@ def handleChange() {
     def thermostat = getThermostat()
 
     //update device
-    thermostat.setHeatingStatus(getHeatingStatus(thermostat))
-    thermostat.setCoolingStatus(getCoolingStatus(thermostat))
     thermostat.setVirtualTemperature(getAverageTemperature())
 
     switch (thermostat.currentValue('thermostatMode')){
@@ -213,6 +211,7 @@ def handleChange() {
             } else {
                 off()
             }
+            thermostat.setHeatingStatus(getHeatingStatus(thermostat))
             break
         case "cool":
             if(shouldCoolingBeOn(thermostat)) {
@@ -220,6 +219,7 @@ def handleChange() {
             } else {
                 off()
             }
+            thermostat.setCoolingStatus(getCoolingStatus(thermostat))
             break
         case "auto":
             if(shouldCoolingBeOn(thermostat)) {
@@ -229,6 +229,8 @@ def handleChange() {
             } else {
                 off()
             }
+            thermostat.setHeatingStatus(getHeatingStatus(thermostat))
+            thermostat.setCoolingStatus(getCoolingStatus(thermostat))
             break
         case "off":
         default:
