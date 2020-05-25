@@ -43,7 +43,6 @@ def createDevice() {
     def thermostat
     def label = app.getLabel()
     
-
     log.debug "create device with id: pmvt$state.deviceID, named: $label" //, hub: $sensor.hub.id"
     try {
         thermostat = addChildDevice("piratemedia/smartthings", "Virtual Thermostat Device", "pmvt" + state.deviceID, null, [label: label, name: label, completedSetup: true])
@@ -151,44 +150,46 @@ def off() {
 
 def handleChange() {
     def thermostat = getThermostat()
-    log.debug "handle change, mode: " + thermostat.currentValue('thermostatMode') + 
-    	", temp: " + getAverageTemperature() + 
-        ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
-        ", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
-        ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
+    if(thermostat) {
+        log.debug "handle change, mode: " + thermostat.currentValue('thermostatMode') + 
+            ", temp: " + getAverageTemperature() + 
+            ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
+            ", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
+            ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
 
 
-    //update device
-    thermostat.setVirtualTemperature(getAverageTemperature())
+        //update device
+        thermostat.setVirtualTemperature(getAverageTemperature())
 
-    switch (thermostat.currentValue('thermostatMode')){
-        case "heat":
-            if(shouldHeatingBeOn(thermostat)) {
-                heat()
-            } else {
+        switch (thermostat.currentValue('thermostatMode')){
+            case "heat":
+                if(shouldHeatingBeOn(thermostat)) {
+                    heat()
+                } else {
+                    off()
+                }
+                break
+            case "cool":
+                if(shouldCoolingBeOn(thermostat)) {
+                    cool()
+                } else {
+                    off()
+                }
+                break
+            case "auto":
+                if(shouldCoolingBeOn(thermostat)) {
+                    cool()
+                } else if(shouldHeatingBeOn(thermostat)) {
+                    heat()
+                } else {
+                    off()
+                }
+                break
+            case "off":
+            default:
                 off()
-            }
-            break
-        case "cool":
-            if(shouldCoolingBeOn(thermostat)) {
-                cool()
-            } else {
-                off()
-            }
-            break
-        case "auto":
-            if(shouldCoolingBeOn(thermostat)) {
-                cool()
-            } else if(shouldHeatingBeOn(thermostat)) {
-                heat()
-            } else {
-                off()
-            }
-            break
-        case "off":
-        default:
-            off()
-            break
+                break
+        }
     }
 }
 
@@ -226,9 +227,8 @@ def updated()
     
     //subscribe to virtual device changes
     subscribe(thermostat, "thermostatSetpoint", thermostatSetPointHandler)
-    subscribe(thermostat, "heatingSetpoint", thermostatTemperatureHandler)
-    subscribe(thermostat, "coolingSetpoint", thermostatTemperatureHandler)
-
+    subscribe(thermostat, "heatingSetpoint", heatingSetPointHandler)
+    subscribe(thermostat, "coolingSetpoint", coolingSetPointHandler)
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
     
     //reset some values
@@ -237,22 +237,43 @@ def updated()
 }
 
 def thermostatSetPointHandler(evt) {
-    log.debug "thermostatSetPointHandler" + evt
-    handleChange()
-}
-
-def temperatureHandler(evt) {
-    handleChange()
-}
-
-def motionHandler(evt) {
+    def thermostat = getThermostat()
+    log.debug "thermostatSetPointHandler: " + thermostat.currentValue("thermostatSetpoint")
+    //log.debug "should be setting heatingsetpoint to " + (evt - threshold)
+    thermostat.setHeatingSetpoint(thermostat.currentValue("thermostatSetpoint") - threshold)
+    thermostat.setCoolingSetpoint(thermostat.currentValue("thermostatSetpoint") + threshold)    
+    log.debug "calling handle change"
     handleChange()
 }
 
 def thermostatTemperatureHandler(evt) {
+    log.debug "why is this being called? thermostatTemperatureHandler: " + evt
+    handleChange()
+}
+
+def coolingSetPointHandler(evt) {
+    def thermostat = getThermostat()
+	log.debug "coolingSetPointHandler: " + thermostat.currentValue("coolingSetpoint")
 	handleChange()
 }
 
+def heatingSetPointHandler(evt) {
+    def thermostat = getThermostat()
+	log.debug "heatingSetPointHandler: " + thermostat.currentValue("heatingSetpoint")
+	handleChange()
+}
+
+def temperatureHandler(evt) {
+	log.debug "temperatureHandler: " + evt
+    handleChange()
+}
+
+def motionHandler(evt) {
+	log.debug "motionHandler: " + evt
+    handleChange()
+}
+
 def thermostatModeHandler(evt) {
+	log.debug "thermostatModeHandler: " + evt
 	handleChange()
 }
