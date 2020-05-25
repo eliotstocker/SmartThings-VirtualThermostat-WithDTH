@@ -18,7 +18,9 @@ metadata {
 		command "poll"
         
 		command "offbtn"
+		command "coolbtn"
 		command "heatbtn"
+		command "autobtn"
 		command "levelUpDown"
 		command "levelUp"
 		command "levelDown"
@@ -50,13 +52,17 @@ metadata {
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				attributeState("idle",		    backgroundColor: "#44B621")
 				attributeState("heating",	    backgroundColor: "#FFA81E")
+				attributeState("cooling",	    backgroundColor: "#1eceff")
 				attributeState("off",		    backgroundColor: "#ddcccc")
 				attributeState("pending heat",	backgroundColor: "#e60000")
+				attributeState("pending cool",	backgroundColor: "#0022e6")
 			}
             
 			tileAttribute("device.thermostatMode", key: "THERMOSTAT_MODE") {
 				attributeState("off", label:'Off')
 				attributeState("heat", label:'Heat')
+				attributeState("cool", label:'Cool')
+				attributeState("auto", label:'Auto')
 			}
             
 			tileAttribute("device.thermostatSetpoint", key: "HEATING_SETPOINT") {
@@ -71,7 +77,9 @@ metadata {
         
 		standardTile("thermostatMode", "device.thermostatMode", width:2, height:2, decoration: "flat") {
 			state("off", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/off_icon.png")
-			state("heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_icon.png")
+			state("heat", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_heat.png")
+			state("cool", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_cool.png")
+			state("auto", 	action:"changeMode", nextState: "updating", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_auto.png")
 			state("Updating", label:"", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/cmd_working.png")
 		}
         
@@ -80,10 +88,20 @@ metadata {
 		}
         
 		standardTile("heatBtn", "device.canHeat", width:1, height:1, decoration: "flat") {
-			state("Heat", action: "heatbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_icon.png")
+			state("Heat", action: "heatbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_heat.png")
 			state "false", label: ''
 		}
-        
+
+		standardTile("coolBtn", "device.canCool", width:1, height:1, decoration: "flat") {
+			state("Cool", action: "coolbtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_cool.png")
+			state "false", label: ''
+		}
+
+		standardTile("autoBtn", "device.canAuto", width:1, height:1, decoration: "flat") {
+			state("Auto", action: "autobtn", icon: "https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/hvac_auto.png")
+			state "false", label: ''
+		}
+
 		standardTile("refresh", "device.refresh", width:2, height:2, decoration: "flat") {
 			state "Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
@@ -113,9 +131,11 @@ metadata {
         
 		details( ["temperature", "thermostatMode",
 				"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				"heatSliderControl", "offBtn", "heatBtn", "refresh"] )
+				"heatSliderControl", "offBtn", "coolBtn", "heatBtn", "autoBtn", "refresh"] )
 	}
 }
+
+def thermostatModes = ['cool', 'heat', 'auto', 'off']
 
 def shouldReportInCentigrade() {
 	try {
@@ -144,7 +164,7 @@ private initialize() {
     setVirtualTemperature(defaultTemp())
     setHeatingStatus("off")
     setThermostatMode("off")
-    sendEvent(name:"supportedThermostatModes",    value: ['heat', 'off'], displayed: false)
+    sendEvent(name:"supportedThermostatModes",    value: thermostatModes, displayed: false)
     sendEvent(name:"supportedThermostatFanModes", values: [], displayed: false)
     
 	state.tempScale = "C"
@@ -228,7 +248,7 @@ def parse(data) {
 
 def refresh() {
     log.trace "Executing refresh"
-    sendEvent(name: "supportedThermostatModes",    value: ['heat', 'off'], displayed: false)
+    sendEvent(name: "supportedThermostatModes",    value: thermostatModes, displayed: false)
     sendEvent(name: "supportedThermostatFanModes", values: [], displayed: false)
 }
 
@@ -255,8 +275,16 @@ def offbtn() {
 	setThermostatMode("off")
 }
 
+def coolbtn() {
+	setThermostatMode("cool")
+}
+
 def heatbtn() {
 	setThermostatMode("heat")
+}
+
+def autobtn() {
+	setThermostatMode("auto")
 }
 
 def setThermostatMode(mode) {
@@ -269,9 +297,12 @@ def levelUpDown() {
 }
 
 def changeMode() {
-	def val = device.currentValue("thermostatMode") == "off" ? "heat" : "off"
-	setThermostatMode(val)
-    return val
+	def currentMode = device.currentValue("thermostatMode")
+	def currentModeIdx = thermostatModes.indexOf(currentMode)
+	def newModeIdx = (currentModeIdx + 1) % thermostatModes.size()
+	def newMode = thermostatModes[newModeIdx]
+	setThermostatMode(newMode)
+    return newMode
 }
 
 def setVirtualTemperature(temp) {
