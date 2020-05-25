@@ -113,8 +113,7 @@ metadata {
 		}
         
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 1, height: 1) {
-			state("heatingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF",
-				backgroundColors: [ [value: 0, color: "#FFFFFF"], [value: 7, color: "#FF3300"], [value: 15, color: "#FF3300"] ])
+			state("heatingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF", backgroundColor: "#e86d13")
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
         
@@ -134,8 +133,7 @@ metadata {
 		}
 
 		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 1, height: 1) {
-			state("coolingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF",
-					backgroundColors: [ [value: 0, color: "#FFFFFF"], [value: 7, color: "#0022FF"], [value: 15, color: "#0022FF"] ])
+			state("coolingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF", backgroundColor: "#00a0dc")
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
 
