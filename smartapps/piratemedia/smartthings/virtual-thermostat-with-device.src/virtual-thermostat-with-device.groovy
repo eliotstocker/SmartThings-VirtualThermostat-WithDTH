@@ -54,7 +54,7 @@ def createDevice() {
 }
 
 def shouldHeatingBeOn(thermostat) {    
-    //if temperature is bellow emergency setpoint
+    //if temperature is below emergency setpoint
     if(emergencyHeatingSetpoint && emergencyHeatingSetpoint > getAverageTemperature()) {
     	return true;
     }
@@ -73,7 +73,7 @@ def shouldHeatingBeOn(thermostat) {
         }
     }
     
-    //average temperature across all temperateure sensors is above set point
+    //average temperature across all temperature sensors is above set point
     if (thermostat.currentValue("heatingSetpoint") - getAverageTemperature() <= threshold) {
     	return false;
     }
@@ -101,8 +101,8 @@ def shouldCoolingBeOn(thermostat) {
         }
     }
     
-    //average temperature across all temperateure sensors is above set point
-    if (getAverageTemperature() - thermostat.currentValue("thermostatSetpoint") <= threshold) {
+    //average temperature across all temperature sensors is below set point
+    if (getAverageTemperature() - thermostat.currentValue("coolingSetpoint") <= threshold) {
         return false;
     }
     
@@ -157,7 +157,7 @@ def getCoolingStatus(thermostat) {
         }
     }
     
-    //average temperature across all temperateure sensors is above set point
+    //average temperature across all temperature sensors is above set point
     if (getAverageTemperature() - thermostat.currentValue("thermostatSetpoint") <= threshold) {
         return 'idle';
     }
@@ -261,7 +261,7 @@ def updated()
         thermostat = createDevice()
     }
     
-    //subscribe to temperatuire changes
+    //subscribe to temperature changes
 	subscribe(sensors, "temperature", temperatureHandler)
     
     //subscribe to contact sensor changes

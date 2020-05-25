@@ -10,6 +10,7 @@ metadata {
 		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
+		capability "Thermostat Cooling Setpoint"
 		capability "Thermostat Operating State"
 		capability "Configuration"
 		capability "Refresh"
@@ -26,6 +27,8 @@ metadata {
 		command "levelDown"
 		command "heatingSetpointUp"
 		command "heatingSetpointDown"
+		command "coolingSetpointUp"
+		command "coolingSetpointDown"
 		command "changeMode"
 		command "setVirtualTemperature", ["number"]
 		command "setHeatingStatus", ["string"]
@@ -66,6 +69,10 @@ metadata {
 			}
             
 			tileAttribute("device.thermostatSetpoint", key: "HEATING_SETPOINT") {
+				attributeState("default", label:'${currentValue}')
+			}
+
+			tileAttribute("device.thermostatSetpoint", key: "COOLING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
 			}
 		}
@@ -127,12 +134,35 @@ metadata {
 			state "", label: ''
 		}
 
+		valueTile("coolingSetpoint", "device.thermostatSetpoint", width: 1, height: 1) {
+			state("coolingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF",
+					backgroundColors: [ [value: 0, color: "#FFFFFF"], [value: 7, color: "#0022FF"], [value: 15, color: "#0022FF"] ])
+			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
+		}
+
+		standardTile("coolingSetpointUp", "device.thermostatSetpoint", width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+			state "default", label: '', action:"coolingSetpointUp", icon:"https://raw.githubusercontent.com/racarmichael/SmartThings-VirtualThermostat-WithDTH/master/images/cool_arrow_up.png"
+			state "", label: ''
+		}
+
+		standardTile("coolingSetpointDown", "device.thermostatSetpoint",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+			state "default", label:'', action:"coolingSetpointDown", icon:"https://raw.githubusercontent.com/racarmichael/SmartThings-VirtualThermostat-WithDTH/master/images/cool_arrow_down.png"
+			state "", label: ''
+		}
+
+		controlTile("coolSliderControl", "device.thermostatSetpoint", "slider", height: 1, width: 4, range: getRange(), inactiveLabel: false) {
+			state "default", action:"setCoolingSetpoint", backgroundColor:"#0022ff"
+			state "", label: ''
+		}
+
 		main("temp2")
         
 		details( ["temperature", "thermostatMode", 
-        		"coolBtn", "heatBtn", "autoBtn", "offBtn",
-				//"heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				//"heatSliderControl", "refresh"
+				  "coolBtn", "heatBtn", "autoBtn", "offBtn",
+				  "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
+				  "heatSliderControl", "refresh",
+				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp","coolBtn",
+				  "coolSliderControl"
                 ] )
 	}
 }
@@ -165,8 +195,10 @@ private initialize() {
     log.trace "Executing 'initialize'"
     
     setHeatingSetpoint(defaultTemp())
+	setCoolingSetpoint(defaultTemp())
     setVirtualTemperature(defaultTemp())
     setHeatingStatus("off")
+	setCoolingStatus("off")
     setThermostatMode("off")
     sendEvent(name:"supportedThermostatModes",    value: thermostatModes(), displayed: false)
     sendEvent(name:"supportedThermostatFanModes", values: [], displayed: false)
@@ -234,6 +266,28 @@ def heatingSetpointDown() {
 	setHeatingSetpoint(hsp - 1.0)
 }
 
+def setCoolingSetpoint(temp) {
+	def ctsp = device.currentValue("thermostatSetpoint");
+	def ccsp = device.currentValue("coolingSetpoint");
+
+	if(ctsp != temp || ccsp != temp) {
+		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString(), displayed: false)
+		sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
+	}
+}
+
+def coolingSetpointUp() {
+	def csp = device.currentValue("thermostatSetpoint")
+	if(csp + 1.0 > highRange()) return;
+	setCoolingSetpoint(csp + 1.0)
+}
+
+def coolingSetpointDown() {
+	def csp = device.currentValue("thermostatSetpoint")
+	if(csp - 1.0 < lowRange()) return;
+	setCoolingSetpoint(csp - 1.0)
+}
+
 def levelUp() {
 	def hsp = device.currentValue("thermostatSetpoint")
 	if(hsp + 1.0 > highRange()) return;
@@ -270,6 +324,10 @@ def getThermostatSetpoint() {
 
 def getHeatingSetpoint() {
 	return device.currentValue("heatingSetpoint")
+}
+
+def getCoolingSetpoint() {
+	return device.currentValue("coolingSetpoint")
 }
 
 def poll() {
@@ -317,4 +375,10 @@ def setHeatingStatus(string) {
 	if(device.currentValue("thermostatOperatingState") != string) {
 		sendEvent(name:"thermostatOperatingState", value: string)
     }
+}
+
+def setCoolingStatus(string) {
+	if(device.currentValue("thermostatOperatingState") != string) {
+		sendEvent(name:"thermostatOperatingState", value: string)
+	}
 }
