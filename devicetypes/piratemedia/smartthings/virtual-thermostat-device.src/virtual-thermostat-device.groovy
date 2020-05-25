@@ -11,6 +11,7 @@ metadata {
 		capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Cooling Setpoint"
+		capability "Thermostat Setpoint"
 		capability "Thermostat Operating State"
 		capability "Configuration"
 		capability "Refresh"
@@ -31,6 +32,7 @@ metadata {
 		command "setVirtualTemperature", ["number"]
 
 		attribute "temperatureUnit", "string"
+        attribute "thermostatSetpoint", "number"
 	}
 
 	simulator {
