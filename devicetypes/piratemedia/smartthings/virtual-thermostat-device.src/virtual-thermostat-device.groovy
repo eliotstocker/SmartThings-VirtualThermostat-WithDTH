@@ -196,8 +196,8 @@ def configure() {
 private initialize() {
     log.trace "Executing 'initialize'"
     
-    setHeatingSetpoint(defaultTemp())
 	setCoolingSetpoint(defaultTemp())
+	setHeatingSetpoint(defaultTemp())
 	setThermostatSetpoint(defaultTemp())
     setVirtualTemperature(defaultTemp())
 	setThermostatOperatingState("idle")
@@ -265,14 +265,14 @@ def setHeatingSetpoint(temp) {
 
 def heatingSetpointUp() {
 	def hsp = device.currentValue("heatingSetpoint")
-	if(hsp + 1.0 > highRange()) return;
-	setHeatingSetpoint(hsp + 1.0)
+	if(hsp + 0.1 > highRange()) return;
+	setHeatingSetpoint(hsp + 0.1)
 }
 
 def heatingSetpointDown() {
 	def hsp = device.currentValue("heatingSetpoint")
-	if(hsp - 1.0 < lowRange()) return;
-	setHeatingSetpoint(hsp - 1.0)
+	if(hsp - 0.1 < lowRange()) return;
+	setHeatingSetpoint(hsp - 0.1)
 }
 
 def setCoolingSetpoint(temp) {
@@ -287,14 +287,14 @@ def setCoolingSetpoint(temp) {
 
 def coolingSetpointUp() {
 	def csp = device.currentValue("coolingSetpoint")
-	if(csp + 1.0 > highRange()) return;
-	setCoolingSetpoint(csp + 1.0)
+	if(csp + 0.1 > highRange()) return;
+	setCoolingSetpoint(csp + 0.1)
 }
 
 def coolingSetpointDown() {
 	def csp = device.currentValue("coolingSetpoint")
-	if(csp - 1.0 < lowRange()) return;
-	setCoolingSetpoint(csp - 1.0)
+	if(csp - 0.1 < lowRange()) return;
+	setCoolingSetpoint(csp - 0.1)
 }
 
 def levelUp() {
