@@ -128,24 +128,38 @@ def getAverageTemperature() {
 }
 
 def cool() {
-    log.debug "cooling outlets on"
-    cooling_outlets.on()
-    heating_outlets.off()
-    thermostat.setThermostatOperatingState('cooling')
+    if(thermostat.currentValue("thermostatOperatingState") != 'cooling') {
+	    log.debug "cooling outlets on"
+    	cooling_outlets.on()
+        if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
+    		heating_outlets.off()
+        }
+    	thermostat.setThermostatOperatingState('cooling')
+    }
 }
 
 def heat() {
-    log.debug "heating outlets on"
-    cooling_outlets.off()
-    heating_outlets.on()
-    thermostat.setThermostatOperatingState('heating')
+    if(thermostat.currentValue("thermostatOperatingState") != 'heating') {
+	    log.debug "heating outlets on"
+    	heating_outlets.on()
+        if(thermostat.currentValue("thermostatOperatingState") == 'cooling') {
+	    	cooling_outlets.off()
+        }
+    	thermostat.setThermostatOperatingState('heating')
+    }
 }
 
 def off() {
-    log.debug "all outlets off"
-    cooling_outlets.off()
-    heating_outlets.off()
-    thermostat.setThermostatOperatingState('idle')
+    if(thermostat.currentValue("thermostatOperatingState") != 'idle') {
+	    log.debug "all outlets off"
+        if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
+    		heating_outlets.off()
+        }
+        if(thermostat.currentValue("thermostatOperatingState") == 'cooling') {
+	    	cooling_outlets.off()
+        }
+    	thermostat.setThermostatOperatingState('idle')
+    }
 }
 
 def handleChange() {
