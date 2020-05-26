@@ -196,8 +196,8 @@ def configure() {
 private initialize() {
     log.trace "Executing 'initialize'"
     
-	setCoolingSetpoint(defaultTemp())
-	setHeatingSetpoint(defaultTemp())
+	setCoolingSetpoint(defaultTemp()+1.0)
+	setHeatingSetpoint(defaultTemp()-1.0)
 	setThermostatSetpoint(defaultTemp())
     setVirtualTemperature(defaultTemp())
 	setThermostatOperatingState("idle")
