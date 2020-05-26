@@ -238,28 +238,52 @@ def updated()
 
 def thermostatSetPointHandler(evt) {
     def thermostat = getThermostat()
-    log.debug "thermostatSetPointHandler: " + thermostat.currentValue("thermostatSetpoint")
-    //log.debug "should be setting heatingsetpoint to " + (evt - threshold)
-    thermostat.setHeatingSetpoint(thermostat.currentValue("thermostatSetpoint") - threshold)
-    thermostat.setCoolingSetpoint(thermostat.currentValue("thermostatSetpoint") + threshold)    
+    def temp = thermostat.currentValue("thermostatSetpoint")
+    log.debug "thermostatSetPointHandler: " + temp
+    thermostat.setHeatingSetpoint(temp - threshold)
+    thermostat.setCoolingSetpoint(temp + threshold)    
     log.debug "calling handle change"
-    handleChange()
-}
-
-def thermostatTemperatureHandler(evt) {
-    log.debug "why is this being called? thermostatTemperatureHandler: " + evt
     handleChange()
 }
 
 def coolingSetPointHandler(evt) {
     def thermostat = getThermostat()
-	log.debug "coolingSetPointHandler: " + thermostat.currentValue("coolingSetpoint")
+    def cool = thermostat.currentValue("coolingSetpoint")
+    def therm = thermostat.currentValue("thermostatSetpoint")
+    def targetThermostat = cool - threshold
+    def heat = thermostat.currentValue("heatingSetpoint")
+    def targetHeat = targetThermostat - threshold
+	log.debug "coolingSetPointHandler: " + cool
+
+	if(therm > targetThermostat) {
+    	thermostat.setThermostatSetpoint(targetThermostat)
+    }
+
+	if(heat > targetHeat) {
+    	thermostat.setHeatingSetpoint(targetHeat)
+    }
+
 	handleChange()
 }
 
 def heatingSetPointHandler(evt) {
     def thermostat = getThermostat()
-	log.debug "heatingSetPointHandler: " + thermostat.currentValue("heatingSetpoint")
+    def heat = thermostat.currentValue("heatingSetpoint")
+    def therm = thermostat.currentValue("thermostatSetpoint")
+    def targetThermostat = heat + threshold
+    def cool = thermostat.currentValue("coolingSetpoint")
+    def targetCool = targetThermostat + threshold
+
+	log.debug "heatingSetPointHandler: " + temp
+
+	if(therm < targetThermostat) {
+    	thermostat.setThermostatSetpoint(targetThermostat)
+    }
+
+	if(cool < targetCool) {
+    	thermostat.setHeatingSetpoint(targetHeat)
+    }
+
 	handleChange()
 }
 
