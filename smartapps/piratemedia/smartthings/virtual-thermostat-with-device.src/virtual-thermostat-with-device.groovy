@@ -150,8 +150,21 @@ def heat() {
 }
 
 def off() {
+    if(thermostat.currentValue("thermostatOperatingState") != 'off') {
+	    log.debug "off: all outlets off"
+        if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
+    		heating_outlets.off()
+        }
+        if(thermostat.currentValue("thermostatOperatingState") == 'cooling') {
+	    	cooling_outlets.off()
+        }
+    	thermostat.setThermostatOperatingState('off')
+    }
+}
+
+def idle() {
     if(thermostat.currentValue("thermostatOperatingState") != 'idle') {
-	    log.debug "all outlets off"
+	    log.debug "idle: all outlets off"
         if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
     		heating_outlets.off()
         }
@@ -169,8 +182,13 @@ def handleChange() {
             ", temp: " + getAverageTemperature() + 
             ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
             ", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
-            ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
-
+            ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint") +
+            ", supportedAttributes: " + thermostat.getSupportedAttributes()
+            
+        def attrs = thermostat.supportedAttributes
+		attrs.each {
+  		  log.debug "${thermostat.displayName}, attribute: ${it.name}, dataType: ${it.dataType}, value: " + thermostat.currentValue(it.name)
+		}
 
         //update device
         thermostat.setVirtualTemperature(getAverageTemperature())
@@ -180,14 +198,14 @@ def handleChange() {
                 if(shouldHeatingBeOn(thermostat)) {
                     heat()
                 } else {
-                    off()
+                    idle()
                 }
                 break
             case "cool":
                 if(shouldCoolingBeOn(thermostat)) {
                     cool()
                 } else {
-                    off()
+                    idle()
                 }
                 break
             case "auto":
@@ -196,7 +214,7 @@ def handleChange() {
                 } else if(shouldHeatingBeOn(thermostat)) {
                     heat()
                 } else {
-                    off()
+                    idle()
                 }
                 break
             case "off":
