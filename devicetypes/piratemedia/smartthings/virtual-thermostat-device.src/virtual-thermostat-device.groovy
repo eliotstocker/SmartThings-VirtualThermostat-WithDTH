@@ -50,9 +50,11 @@ metadata {
 				attributeState("VALUE_DOWN", action: "levelDown")
 			}
             
-			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {iuj
+			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
 				// valid values are thermostatOperatingState — ["heating", "idle", "pending cool", "vent economizer", "cooling", "pending heat", "fan only"]
 				// https://graph.api.smartthings.com/ide/doc/capabilities
+                
+				attributeState("off",		    backgroundColor: "#cccccc")
 				attributeState("idle",		    backgroundColor: "#44B621")
 				attributeState("heating",	    backgroundColor: "#e86d13")
 				attributeState("cooling",	    backgroundColor: "#00a0dc")
@@ -81,14 +83,14 @@ metadata {
 					backgroundColors: getTempColors(), canChangeIcon: true)
 		}
         
-		standardTile("thermostatMode", "device.thermostatMode", width:2, height:1, decoration: "flat") {
+		standardTile("thermostatMode", "device.thermostatMode", width:6, height:2, decoration: "flat") {
 			state("off", label: '${name}')
 			state("heat", label: '${name}')
 			state("cool", label: '${name}')
 			state("auto", label: '${name}')
 		}
         
-		standardTile("offBtn", "device.thermostatMode", width:2, height:2, decoration: "flat") {
+		standardTile("offBtn", "device.thermostatMode", width:2, height:4, decoration: "flat") {
 			state("", action: "offbtn", icon: "https://raw.githubusercontent.com/steffennissen/SmartThings-VirtualThermostat-WithDTH/master/images/unit_on.png", default: true)
 			state("off", icon: "https://raw.githubusercontent.com/steffennissen/SmartThings-VirtualThermostat-WithDTH/master/images/unit_off.png")
 		}
@@ -112,37 +114,36 @@ metadata {
 			state "Refresh", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
         
-		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 1, height: 1) {
+		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
 			state("heatingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF", backgroundColor: "#e86d13")
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
         
-		standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+		standardTile("heatingSetpointUp", "device.heatingSetpoint", width: 2, height: 1, canChangeIcon: true, decoration: "flat") {
 			state "default", label: '', action:"heatingSetpointUp", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_arrow_up.png"
 			state "", label: ''
 		}
         
-		standardTile("heatingSetpointDown", "device.heatingSetpoint",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+		standardTile("heatingSetpointDown", "device.heatingSetpoint",  width: 2, height: 1, canChangeIcon: true, decoration: "flat") {
 			state "default", label:'', action:"heatingSetpointDown", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_arrow_down.png"
 			state "", label: ''
 		}
         
-		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 1, width: 3, range: getRange(), inactiveLabel: false) {
+		controlTile("heatSliderControl", "device.heatingSetpoint", "slider", height: 4, width: 6, range: getRange()) {
 			state "default", action:"setHeatingSetpoint", backgroundColor:"#FF3300"
-			state "", label: ''
 		}
 
-		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 1, height: 1) {
+		valueTile("coolingSetpoint", "device.coolingSetpoint", width: 2, height: 2) {
 			state("coolingSetpoint", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF", backgroundColor: "#00a0dc")
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
 
-		standardTile("coolingSetpointUp", "device.coolingSetpoint", width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+		standardTile("coolingSetpointUp", "device.coolingSetpoint", width: 2, height: 1, canChangeIcon: true, decoration: "flat") {
 			state "default", label: '', action:"coolingSetpointUp", icon:"https://raw.githubusercontent.com/racarmichael/SmartThings-VirtualThermostat-WithDTH/master/images/cool_arrow_up.png"
 			state "", label: ''
 		}
 
-		standardTile("coolingSetpointDown", "device.coolingSetpoint",  width: 1, height: 1, canChangeIcon: true, decoration: "flat") {
+		standardTile("coolingSetpointDown", "device.coolingSetpoint",  width: 2, height: 1, canChangeIcon: true, decoration: "flat") {
 			state "default", label:'', action:"coolingSetpointDown", icon:"https://raw.githubusercontent.com/racarmichael/SmartThings-VirtualThermostat-WithDTH/master/images/cool_arrow_down.png"
 			state "", label: ''
 		}
@@ -155,16 +156,16 @@ metadata {
 		main("temp2")
         
 		details( ["temperature", 
-				  "coolBtn", "heatBtn", 
-                  "heatingSetpointUp", "coolingSetpointUp", 
-                  "heatingSetpoint", "coolingSetpoint",
-                  "autoBtn", "offBtn", 
-                  //"thermostatMode", 
-				  "heatingSetpointDown",
+                  "coolingSetpointUp", "heatingSetpointUp", 
+        		  "offBtn",
+        		  "coolingSetpoint", "heatingSetpoint", 
+				  "coolingSetpointDown", "heatingSetpointDown", 
+                  "thermostatMode",
+                  "coolBtn","heatBtn", 
+                  "autoBtn"
 				  //"heatSliderControl", 
-				  "coolingSetpointDown", 
 				  //"coolSliderControl"
-                  "refresh"
+                  //"refresh"
                 ] )
 	}
 }
@@ -200,7 +201,7 @@ private initialize() {
 	setHeatingSetpoint(defaultTemp()-1.0)
 	setThermostatSetpoint(defaultTemp())
     setVirtualTemperature(defaultTemp())
-	setThermostatOperatingState("idle")
+	setThermostatOperatingState("off")
     setThermostatMode("off")
     sendEvent(name:"supportedThermostatModes", value: thermostatModes(), displayed: false)
 
