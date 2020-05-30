@@ -28,8 +28,8 @@ preferences {
     section("Never go above this temperature: (optional)"){
         input "emergencyCoolingSetpoint", "decimal", title: "Emergency Max Temp", required: false
     }
-	section("Temperature Threshold (Don't allow heating/cooling to go above or bellow this amount from set temperature)") {
-		input "threshold", "decimal", title: "Temperature Threshold", required: false, defaultValue: 1.0
+	section("The minimum difference between the heating and cooling setpoint, it's recommended to not put this too low to conserve energy") {
+		input "heatCoolDelta", "decimal", title: "Heat / Cool Delta", required: false, defaultValue: 3.0
 	}
 }
 
@@ -266,33 +266,63 @@ def updated()
     //reset some values
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
+    thermostat.setHeatCoolDelta(heatCoolDelta)
 }
 
 def thermostatSetPointHandler(evt) {
     def thermostat = getThermostat()
     def temp = thermostat.currentValue("thermostatSetpoint")
-    log.debug "thermostatSetPointHandler: " + temp
-    thermostat.setHeatingSetpoint(temp - threshold)
-    thermostat.setCoolingSetpoint(temp + threshold)    
+    def cool = thermostat.currentValue("coolingSetpoint")
+    def heat = thermostat.currentValue("heatingSetpoint")
+    def mode = thermostat.currentValue('thermostatMode')
+    log.debug "thermostatSetPointHandler: " + temp + ", thermostatMode: " + mode
+    
+    if(mode == "heat" && heat != temp) {
+		thermostat.setHeatingSetpoint(temp)
+    } else if(mode == "cool" && cool != temp) {
+		thermostat.setCoolingSetpoint(temp)
+    }
+
+	if(cool < temp) {
+		thermostat.setCoolingSetpoint(temp)
+    } else if(heat > temp) {
+    	thermostat.setHeatingSetpoint(temp)
+    }
     log.debug "calling handle change"
     handleChange()
+}
+
+def autoThermostatSetPoint() {
+    def temp = thermostat.currentValue("thermostatSetpoint")
+    def cool = thermostat.currentValue("coolingSetpoint")
+    def heat = thermostat.currentValue("heatingSetpoint")
+    def mode = thermostat.currentValue('thermostatMode')
+    if(mode == "auto") {
+		def newTemp = (cool + heat) / 2.0
+        if(newTemp != temp) {
+        	thermostat.setThermostatSetpoint(newTemp.setScale(1, BigDecimal.ROUND_HALF_EVEN))
+        }
+    }
 }
 
 def coolingSetPointHandler(evt) {
     def thermostat = getThermostat()
     def cool = thermostat.currentValue("coolingSetpoint")
-    def therm = thermostat.currentValue("thermostatSetpoint")
-    def targetThermostat = cool - threshold
-    def heat = thermostat.currentValue("heatingSetpoint")
-    def targetHeat = targetThermostat - threshold
-	log.debug "coolingSetPointHandler: " + cool
+	log.debug "coolingSetPointHandler: " + cool + ", heatCoolDelta: " + heatCoolDelta 
 
-	if(therm > targetThermostat) {
-    	thermostat.setThermostatSetpoint(targetThermostat)
+	if(thermostat.currentValue('thermostatMode') == "cool") {
+		thermostat.setThermostatSetpoint(cool)
+	} else if(thermostat.currentValue('thermostatMode') == "auto") {
+    	autoThermostatSetPoint()
     }
 
-	if(heat > targetHeat) {
+    def targetHeat = cool - heatCoolDelta
+	if(thermostat.currentValue("heatingSetpoint") > targetHeat) {
     	thermostat.setHeatingSetpoint(targetHeat)
+    }
+
+    if(thermostat.currentValue("thermostatSetpoint") > cool) {
+    	thermostat.setThermostatSetpoint(cool)
     }
 
 	handleChange()
@@ -301,19 +331,21 @@ def coolingSetPointHandler(evt) {
 def heatingSetPointHandler(evt) {
     def thermostat = getThermostat()
     def heat = thermostat.currentValue("heatingSetpoint")
-    def therm = thermostat.currentValue("thermostatSetpoint")
-    def targetThermostat = heat + threshold
-    def cool = thermostat.currentValue("coolingSetpoint")
-    def targetCool = targetThermostat + threshold
+	log.debug "heatingSetPointHandler: " + heat + ", heatCoolDelta: " + heatCoolDelta 
 
-	log.debug "heatingSetPointHandler: " + temp
-
-	if(therm < targetThermostat) {
-    	thermostat.setThermostatSetpoint(targetThermostat)
+	if(thermostat.currentValue('thermostatMode') == "heat") {
+		thermostat.setThermostatSetpoint(heat)
+	} else if(thermostat.currentValue('thermostatMode') == "auto") {
+    	autoThermostatSetPoint()
     }
 
-	if(cool < targetCool) {
-    	thermostat.setHeatingSetpoint(targetHeat)
+    def targetCool = heat + heatCoolDelta
+	if(thermostat.currentValue("coolingSetpoint") < targetCool) {
+    	thermostat.setCoolingSetpoint(targetCool)
+    }
+
+    if(thermostat.currentValue("thermostatSetpoint") < heat) {
+    	thermostat.setThermostatSetpoint(heat)
     }
 
 	handleChange()
@@ -331,5 +363,6 @@ def motionHandler(evt) {
 
 def thermostatModeHandler(evt) {
 	log.debug "thermostatModeHandler: " + evt
+    autoThermostatSetPoint()
 	handleChange()
 }
