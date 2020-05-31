@@ -31,6 +31,12 @@ preferences {
 	section("The minimum difference between the heating and cooling setpoint, it's recommended to not put this too low to conserve energy") {
 		input "heatCoolDelta", "decimal", title: "Heat / Cool Delta", required: false, defaultValue: 3.0
 	}
+	section("The amount that the temperature is allowed to dip below the heating setpoint before engaging heating, it's recommended to not put this too low to avoid heaters turning on and off too frequently") {
+		input "heatDiff", "decimal", title: "Heat Differential", required: false, defaultValue: 0.3
+	}
+	section("The amount that the temperature is allowed to go above the cooling setpoint before engaging cooling, it's recommended to not put this too low to avoid coolers turning on and off too frequently") {
+		input "coolDiff", "decimal", title: "Cool Differential", required: false, defaultValue: 0.3
+	}
 }
 
 def installed()
@@ -65,8 +71,10 @@ def motionDetected(){
 
 
 def shouldHeatingBeOn(thermostat) {    
+    def temp = getAverageTemperature()
+
     //if temperature is below emergency setpoint
-    if(emergencyHeatingSetpoint && emergencyHeatingSetpoint > getAverageTemperature()) {
+    if(emergencyHeatingSetpoint && emergencyHeatingSetpoint > temp) {
     	return true;
     }
     
@@ -81,16 +89,18 @@ def shouldHeatingBeOn(thermostat) {
     }
 
     //average temperature across all temperature sensors is above set point
-    if (thermostat.currentValue("heatingSetpoint") < getAverageTemperature()) {
-    	return false;
+    if(temp > thermostat.currentValue("adjustedHeatingPoint")) {
+	    return false;
     }
-    
+
     return true;
 }
 
 def shouldCoolingBeOn(thermostat) {    
+    def temp = getAverageTemperature()
+    
     //if temperature is above emergency setpoint
-    if(emergencyCoolingSetpoint && emergencyCoolingSetpoint < getAverageTemperature()) {
+    if(emergencyCoolingSetpoint && emergencyCoolingSetpoint < temp) {
         return true;
     }
     
@@ -105,10 +115,10 @@ def shouldCoolingBeOn(thermostat) {
     }
     
     //average temperature across all temperature sensors is below set point
-    if (thermostat.currentValue("coolingSetpoint") > getAverageTemperature()) {
-        return false;
+    if(temp < thermostat.currentValue("adjustedCoolingPoint")) {
+	    return false;
     }
-    
+
     return true;    
 }
 
@@ -221,7 +231,6 @@ def handleChange() {
     }
 }
 
-
 def getThermostat() {
     return getChildDevice("pmvt" + state.deviceID)
 }
@@ -260,6 +269,8 @@ def updated()
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
     thermostat.setHeatCoolDelta(heatCoolDelta)
+    thermostat.setHeatDiff(heatDiff)
+    thermostat.setCoolDiff(coolDiff)
 }
 
 def thermostatSetPointHandler(evt) {
