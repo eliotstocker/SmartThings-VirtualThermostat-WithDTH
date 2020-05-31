@@ -182,18 +182,14 @@ def handleChange() {
             ", temp: " + getAverageTemperature() + 
             ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
             ", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
-            ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint") +
-            ", supportedAttributes: " + thermostat.getSupportedAttributes()
+            ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
             
-        def attrs = thermostat.supportedAttributes
+        /*def attrs = thermostat.supportedAttributes
 		attrs.each {
   		  log.debug "${thermostat.displayName}, attribute: ${it.name}, dataType: ${it.dataType}, value: " + thermostat.currentValue(it.name)
-		}
+		}*/
 
-        //update device
-        thermostat.setVirtualTemperature(getAverageTemperature())
-
-        switch (thermostat.currentValue('thermostatMode')){
+		switch (thermostat.currentValue('thermostatMode')){
             case "heat":
                 if(shouldHeatingBeOn(thermostat)) {
                     heat()
@@ -227,10 +223,7 @@ def handleChange() {
 
 
 def getThermostat() {
-	def child = getChildDevices().find {
-    	d -> d.deviceNetworkId.startsWith("pmvt" + state.deviceID)
-  	}
-    return child
+    return getChildDevice("pmvt" + state.deviceID)
 }
 
 def uninstalled() {
@@ -270,99 +263,32 @@ def updated()
 }
 
 def thermostatSetPointHandler(evt) {
-    def thermostat = getThermostat()
-    def temp = thermostat.currentValue("thermostatSetpoint")
-    def cool = thermostat.currentValue("coolingSetpoint")
-    def heat = thermostat.currentValue("heatingSetpoint")
-    def mode = thermostat.currentValue('thermostatMode')
-    log.debug "thermostatSetPointHandler: " + temp + ", thermostatMode: " + mode
-    
-    if(mode == "heat" && heat != temp) {
-		thermostat.setHeatingSetpoint(temp)
-    } else if(mode == "cool" && cool != temp) {
-		thermostat.setCoolingSetpoint(temp)
-    }
-
-	if(cool < temp) {
-		thermostat.setCoolingSetpoint(temp)
-    } else if(heat > temp) {
-    	thermostat.setHeatingSetpoint(temp)
-    }
-    log.debug "calling handle change"
+    log.debug "thermostatSetPointHandler: ${evt.stringValue}"
     handleChange()
 }
 
-def autoThermostatSetPoint() {
-    def temp = thermostat.currentValue("thermostatSetpoint")
-    def cool = thermostat.currentValue("coolingSetpoint")
-    def heat = thermostat.currentValue("heatingSetpoint")
-    def mode = thermostat.currentValue('thermostatMode')
-    if(mode == "auto") {
-		def newTemp = (cool + heat) / 2.0
-        if(newTemp != temp) {
-        	thermostat.setThermostatSetpoint(newTemp.setScale(1, BigDecimal.ROUND_HALF_EVEN))
-        }
-    }
-}
-
 def coolingSetPointHandler(evt) {
-    def thermostat = getThermostat()
-    def cool = thermostat.currentValue("coolingSetpoint")
-	log.debug "coolingSetPointHandler: " + cool + ", heatCoolDelta: " + heatCoolDelta 
-
-	if(thermostat.currentValue('thermostatMode') == "cool") {
-		thermostat.setThermostatSetpoint(cool)
-	} else if(thermostat.currentValue('thermostatMode') == "auto") {
-    	autoThermostatSetPoint()
-    }
-
-    def targetHeat = cool - heatCoolDelta
-	if(thermostat.currentValue("heatingSetpoint") > targetHeat) {
-    	thermostat.setHeatingSetpoint(targetHeat)
-    }
-
-    if(thermostat.currentValue("thermostatSetpoint") > cool) {
-    	thermostat.setThermostatSetpoint(cool)
-    }
-
+	log.debug "coolingSetPointHandler: ${evt.stringValue}"
 	handleChange()
 }
 
 def heatingSetPointHandler(evt) {
-    def thermostat = getThermostat()
-    def heat = thermostat.currentValue("heatingSetpoint")
-	log.debug "heatingSetPointHandler: " + heat + ", heatCoolDelta: " + heatCoolDelta 
-
-	if(thermostat.currentValue('thermostatMode') == "heat") {
-		thermostat.setThermostatSetpoint(heat)
-	} else if(thermostat.currentValue('thermostatMode') == "auto") {
-    	autoThermostatSetPoint()
-    }
-
-    def targetCool = heat + heatCoolDelta
-	if(thermostat.currentValue("coolingSetpoint") < targetCool) {
-    	thermostat.setCoolingSetpoint(targetCool)
-    }
-
-    if(thermostat.currentValue("thermostatSetpoint") < heat) {
-    	thermostat.setThermostatSetpoint(heat)
-    }
-
+	log.debug "heatingSetPointHandler: ${evt.stringValue}"
 	handleChange()
 }
 
 def temperatureHandler(evt) {
-	log.debug "temperatureHandler: " + evt
+	log.debug "temperatureHandler: ${evt.stringValue}"
+    getThermostat().setVirtualTemperature(getAverageTemperature())
     handleChange()
 }
 
 def motionHandler(evt) {
-	log.debug "motionHandler: " + evt
+	log.debug "motionHandler: ${evt.stringValue}"
     handleChange()
 }
 
 def thermostatModeHandler(evt) {
-	log.debug "thermostatModeHandler: " + evt
-    autoThermostatSetPoint()
+	log.debug "thermostatModeHandler: ${evt.stringValue}"
 	handleChange()
 }
