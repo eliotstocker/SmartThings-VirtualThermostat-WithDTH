@@ -43,6 +43,7 @@ def installed()
 {
     log.debug "running installed"
     state.deviceID = Math.abs(new Random().nextInt() % 9999) + 1
+    updated()
 }
 
 def createDevice() {
