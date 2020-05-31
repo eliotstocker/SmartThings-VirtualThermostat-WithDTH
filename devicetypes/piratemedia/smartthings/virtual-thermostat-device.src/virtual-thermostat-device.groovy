@@ -47,8 +47,8 @@ metadata {
 			}
             
 			tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
-				attributeState("VALUE_UP", action: "levelUp")
-				attributeState("VALUE_DOWN", action: "levelDown")
+				attributeState("VALUE_UP", label: '', action: "levelUp")
+				attributeState("VALUE_DOWN", label: '', action: "levelDown")
 			}
             
 			tileAttribute("device.thermostatOperatingState", key: "OPERATING_STATE") {
@@ -57,7 +57,7 @@ metadata {
                 
 				attributeState("off",		    backgroundColor: "#cccccc")
 				attributeState("idle",		    backgroundColor: "#44B621")
-				attributeState("heating",	    backgroundColor: "#f5dcec")
+				attributeState("heating",	    backgroundColor: "#e86d13")
 				attributeState("cooling",	    backgroundColor: "#00a0dc")
 				attributeState("pending heat",	backgroundColor: "#ffd19c")
 				attributeState("pending cool",	backgroundColor: "#85b3d6")
@@ -116,7 +116,7 @@ metadata {
 		}
         
 		valueTile("heatingSetpoint", "device.heatingSetpoint", width: 2, height: 2) {
-			state("heatingSetpoint", action: "heatbtn", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF", backgroundColor: "#f5dcec")
+			state("heatingSetpoint", action: "heatbtn", label:'${currentValue}', unit: unitString(), foregroundColor: "#FFFFFF", backgroundColor: "#e86d13")
 			state("disabled", label: '', foregroundColor: "#FFFFFF", backgroundColor: "#FFFFFF")
 		}
         
@@ -160,10 +160,6 @@ metadata {
 			state "", label: ''
 		}
 
-        //standardTile("upButtonControl", "device.thermostatSetpoint", width: 2, height: 2, inactiveLabel: false) {
-		//	state "setpoint", action:"raiseSetpoint", icon:"st.thermostat.heat"
-		//}  
-
 		main("temp2")
         
 		details( ["temperature", 
@@ -177,7 +173,7 @@ metadata {
                   "coolBtn","heatBtn", 
                   "autoBtn",
 				  //"coolSliderControl"
-                  "refresh"
+                  //"refresh",
                 ] )
 	}
 }
@@ -258,70 +254,152 @@ def getTemperature() {
 	return device.currentValue("temperature")
 }
 
-def setThermostatSetpoint(temp) {
+def sendThermostatSetpoint(temp) {
 	def tsp = device.currentValue("thermostatSetpoint")
-
-	log.debug "setThermostatSetpoint from " + tsp + " to " + temp
-	if(tsp != temp) {
+    if(temp != tsp) {
+    	log.debug "sendThermostatSetpoint from " + tsp + " to " + temp
 		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString())
-	}
-}
-
-def setHeatingSetpoint(temp) {
-	log.debug "setHeatingSetpoint: " + temp
-    def hsp = device.currentValue("heatingSetpoint");
-
-    if(hsp != temp) {
-        sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
     }
 }
 
-def heatingSetpointUp() {
-	def hsp = device.currentValue("heatingSetpoint")
-	if(hsp + 0.1 > highRange()) return;
-	setHeatingSetpoint(hsp + 0.1)
-}
-
-def heatingSetpointDown() {
-	def hsp = device.currentValue("heatingSetpoint")
-	if(hsp - 0.1 < lowRange()) return;
-	setHeatingSetpoint(hsp - 0.1)
-}
-
-def setCoolingSetpoint(temp) {
-	log.debug "setCoolingSetpoint: " + temp
-
-	def csp = device.currentValue("coolingSetpoint");
-
-	if(csp != temp) {
+def sendCoolingSetpoint(temp) {
+	def csp = device.currentValue("coolingSetpoint")
+    if(temp != csp) {
+    	log.debug "sendCoolingSetpoint from " + csp + " to " + temp
 		sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
+    }
+}
+
+def sendHeatingSetpoint(temp) {
+	def hsp = device.currentValue("heatingSetpoint")
+    if(temp != hsp) {
+        log.debug "sendHeatingSetpoint from " + hsp + " to " + temp
+		sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
+    }
+}
+
+def setThermostatSetpoint(temp) {
+	def tsp = device.currentValue("thermostatSetpoint")
+	log.debug "setThermostatSetpoint from " + tsp + " to " + temp
+	if(tsp != temp) {
+        def csp = device.currentValue("coolingSetpoint")
+        def hsp = device.currentValue("heatingSetpoint")
+        def mode = device.currentValue('thermostatMode')
+        
+        if(mode == "heat" && hsp != temp) {
+            sendHeatingSetpoint(temp)
+        } else if(mode == "cool" && csp != temp) {
+            sendCoolingSetpoint(temp)
+        }
+
+        if(csp < temp) {
+            sendCoolingSetpoint(temp)
+        } else if(heat > temp) {
+            setHeatingSetpoint(temp)
+        }
+		sendThermostatSetpoint(temp)
 	}
 }
 
+def autoThermostatSetPoint() {
+    if(device.currentValue('thermostatMode') == "auto") {
+	    def temp = device.currentValue("thermostatSetpoint")
+    	def cool = device.currentValue("coolingSetpoint")
+    	def heat = device.currentValue("heatingSetpoint")
+
+		def newTemp = (cool + heat) / 2.0
+        if(newTemp != temp) {
+        	sendThermostatSetpoint(newTemp.setScale(1, BigDecimal.ROUND_HALF_EVEN))
+        }
+    }
+}
+
+def inRange(val, low, high) {
+    if(val < low)
+    	return low
+    else if(val > high)
+    	return high
+    return val
+}
+
+def setHeatingSetpoint(temp) {
+    def hsp = device.currentValue("heatingSetpoint");
+	log.debug "setHeatingSetpoint from " + hsp + " to " + temp + " within range " + lowRange() + " to " + highRange()
+    temp = inRange(temp, lowRange(), highRange())
+    
+    if(hsp != temp) {
+        if(device.currentValue('thermostatMode') == "heat") {
+            sendThermostatSetpoint(temp)
+        } else if(device.currentValue('thermostatMode') == "auto") {
+            autoThermostatSetPoint()
+        }
+
+        def targetCool = temp + device.currentValue('heatCoolDelta')
+        if(device.currentValue("coolingSetpoint") < targetCool) {
+            sendCoolingSetpoint(targetCool)
+        }
+
+        if(device.currentValue("thermostatSetpoint") < temp) {
+            sendThermostatSetpoint(temp)
+        }
+
+		sendHeatingSetpoint(temp)
+    }
+}
+
+def setCoolingSetpoint(temp) {
+	def csp = device.currentValue("coolingSetpoint");
+	log.debug "setCoolingSetpoint: from " + csp + " to " + temp + " within range " + lowRange() + " to " + highRange()
+    temp = inRange(temp, lowRange(), highRange())
+    
+	if(csp != temp) {
+        if(device.currentValue('thermostatMode') == "cool") {
+            sendThermostatSetpoint(temp)
+        } else if(device.currentValue('thermostatMode') == "auto") {
+            autoThermostatSetPoint()
+        }
+
+        def targetHeat = temp - device.currentValue('heatCoolDelta')
+        if(device.currentValue("heatingSetpoint") > targetHeat) {
+            sendHeatingSetpoint(targetHeat)
+        }
+
+        if(device.currentValue("thermostatSetpoint") > temp) {
+            sendThermostatSetpoint(temp)
+        }
+
+		sendCoolingSetpoint(temp)
+	}
+}
+
+def heatingSetpointUp() {
+	setHeatingSetpoint(device.currentValue("heatingSetpoint") + 0.1)
+}
+
+def heatingSetpointDown() {
+	setHeatingSetpoint(device.currentValue("heatingSetpoint") - 0.1)
+}
+
 def coolingSetpointUp() {
-	def csp = device.currentValue("coolingSetpoint")
-	if(csp + 0.1 > highRange()) return;
-	setCoolingSetpoint(csp + 0.1)
+	setCoolingSetpoint(device.currentValue("coolingSetpoint") + 0.1)
 }
 
 def coolingSetpointDown() {
-	def csp = device.currentValue("coolingSetpoint")
-	if(csp - 0.1 < lowRange()) return;
-	setCoolingSetpoint(csp - 0.1)
+	setCoolingSetpoint(device.currentValue("coolingSetpoint") - 0.1)
 }
 
 def levelUp() {
 	def mode = device.currentValue("thermostatMode")
     switch (mode) {
     	case "heat":
-        	heatingSetpointUp()
+			setHeatingSetpoint(device.currentValue("heatingSetpoint") + 0.5)
             break
         case "cool":
-        	coolingSetpointUp()
+        	setCoolingSetpoint(device.currentValue("coolingSetpoint") + 0.5)
             break
         default:
-        	heatingSetpointUp()
-            coolingSetpointUp()
+        	setHeatingSetpoint(device.currentValue("heatingSetpoint") + 0.5)
+            setCoolingSetpoint(device.currentValue("coolingSetpoint") + 0.5)
     }
 }
 
@@ -329,14 +407,14 @@ def levelDown() {
 	def mode = device.currentValue("thermostatMode")
     switch(mode){
     	case "heat":
-        	heatingSetpointDown()
+        	setHeatingSetpoint(device.currentValue("heatingSetpoint") - 0.5)
             break
         case "cool":
-        	coolingSetpointDown()
+        	setCoolingSetpoint(device.currentValue("coolingSetpoint") - 0.5)
             break
         default:
-        	heatingSetpointDown()
-            coolingSetpointDown()
+        	setHeatingSetpoint(device.currentValue("heatingSetpoint") - 0.5)
+            setCoolingSetpoint(device.currentValue("coolingSetpoint") - 0.5)
     }
 }
 
@@ -404,6 +482,7 @@ def autobtn() {
 def setThermostatMode(mode) {
 	log.trace "setting thermostat mode $mode"
 	if(device.currentValue("thermostatMode") != mode) {
+    	autoThermostatSetPoint()
     	sendEvent(name: "thermostatMode", value: mode)
     }
 }
