@@ -31,9 +31,15 @@ metadata {
 		command "coolingSetpointDown"
 		command "setVirtualTemperature", ["number"]
 		command "setHeatCoolDelta", ["number"]
+		command "setHeatDiff", ["number"]
+		command "setCoolDiff", ["number"]
 
 		attribute "temperatureUnit", "string"
         attribute "heatCoolDelta", "number"
+        attribute "heatDiff", "number"
+        attribute "coolDiff", "number"
+        attribute "adjustedHeatingPoint", "number"
+        attribute "adjustedCoolingPoint", "number"
 	}
 
 	simulator {
@@ -70,11 +76,11 @@ metadata {
 				attributeState("off", label:'Off')
 			}
             
-			tileAttribute("device.heatingSetpoint", key: "HEATING_SETPOINT") {
+			tileAttribute("device.adjustedHeatingPoint", key: "HEATING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
 			}
 
-			tileAttribute("device.coolingSetpoint", key: "COOLING_SETPOINT") {
+			tileAttribute("device.adjustedCoolingPoint", key: "COOLING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
 			}
 		}
@@ -267,6 +273,11 @@ def sendCoolingSetpoint(temp) {
     if(temp != csp) {
     	log.debug "sendCoolingSetpoint from " + csp + " to " + temp
 		sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
+        if(device.currentValue("thermostatOperatingState") == "cooling") {
+        	setAdjustedCoolingPoint(temp)
+        } else {
+        	setAdjustedCoolingPoint(temp + device.currentValue("coolDiff"))
+        }
     }
 }
 
@@ -275,6 +286,11 @@ def sendHeatingSetpoint(temp) {
     if(temp != hsp) {
         log.debug "sendHeatingSetpoint from " + hsp + " to " + temp
 		sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
+        if(device.currentValue("thermostatOperatingState") == "heating") {
+        	setAdjustedHeatingPoint(temp)
+        } else {
+        	setAdjustedHeatingPoint(temp - device.currentValue("heatDiff"))
+        }
     }
 }
 
@@ -495,8 +511,38 @@ def setHeatCoolDelta(delta) {
 	sendEvent(name:"heatCoolDelta", value: delta, unit: unitString(), displayed: true)
 }
 
-def setThermostatOperatingState(string) {
-	if(device.currentValue("thermostatOperatingState") != string) {
-		sendEvent(name:"thermostatOperatingState", value: string)
+def setHeatDiff(diff) {
+	sendEvent(name:"heatDiff", value: diff, unit: unitString(), displayed: true)
+}
+
+def setCoolDiff(diff) {
+	sendEvent(name:"coolDiff", value: diff, unit: unitString(), displayed: true)
+}
+
+def setAdjustedHeatingPoint(point) {
+	if(device.currentValue("adjustedHeatingPoint") != point) {
+		sendEvent(name:"adjustedHeatingPoint", value: point, unit: unitString(), displayed: true)
+    }
+}
+
+def setAdjustedCoolingPoint(point) {
+	if(device.currentValue("adjustedCoolingPoint") != point) {
+		sendEvent(name:"adjustedCoolingPoint", value: point, unit: unitString(), displayed: true)
+    }
+}
+
+def setThermostatOperatingState(operatingState) {
+	if(device.currentValue("thermostatOperatingState") != operatingState) {
+		sendEvent(name:"thermostatOperatingState", value: operatingState)
+        if(operatingState == "heating") {
+        	setAdjustedHeatingPoint(device.currentValue("heatingSetpoint"))
+        } else {
+        	setAdjustedHeatingPoint(device.currentValue("heatingSetpoint") - device.currentValue("heatDiff"))
+        }
+        if(operatingState == "cooling") {
+        	setAdjustedCoolingPoint(device.currentValue("coolingSetpoint"))
+        } else {
+        	setAdjustedCoolingPoint(device.currentValue("coolingSetpoint") + device.currentValue("coolDiff"))
+        }
     }
 }
