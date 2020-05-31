@@ -211,12 +211,15 @@ def configure() {
 private initialize() {
     log.trace "Executing 'initialize'"
     
-	setCoolingSetpoint(defaultTemp()+2.0)
-	setHeatingSetpoint(defaultTemp()-2.0)
-	setThermostatSetpoint(defaultTemp())
-    setVirtualTemperature(defaultTemp())
+    setHeatCoolDelta(0)
+    setHeatDiff(0)
+    setCoolDiff(0)
+	sendCoolingSetpoint(defaultTemp()+2.0)
+	sendHeatingSetpoint(defaultTemp()-2.0)
+	sendThermostatSetpoint(defaultTemp())
 	setThermostatOperatingState("off")
     setThermostatMode("off")
+    setVirtualTemperature(defaultTemp())
     sendEvent(name:"supportedThermostatModes", value: thermostatModes(), displayed: false)
 
 	state.tempScale = "C"
