@@ -25,6 +25,8 @@ metadata {
 		command "autobtn"
 		command "levelUp"
 		command "levelDown"
+		command "smartCoolDown"
+		command "smartHeatUp"
 		command "heatingSetpointUp"
 		command "heatingSetpointDown"
 		command "coolingSetpointUp"
@@ -85,7 +87,7 @@ metadata {
 			}
 		}
         
-		valueTile("temp2", "device.temperature", width: 2, height: 2, decoration: "flat") {
+		valueTile("tempmain", "device.temperature", width: 2, height: 2, decoration: "flat") {
 			state("default", label:'${currentValue}°', icon:"https://raw.githubusercontent.com/eliotstocker/SmartThings-VirtualThermostat-WithDTH/master/device.png",
 					backgroundColors: getTempColors(), canChangeIcon: true)
 		}
@@ -165,8 +167,16 @@ metadata {
 			state "default", action:"setCoolingSetpoint", backgroundColor:"#0022ff"
 			state "", label: ''
 		}
+        
+   		standardTile("smartCool", "device.thermostatMode", width:3, height:2, decoration: "flat") {
+			state "default", label:'Smart Cool Down', action:"smartCoolDown", icon:"https://raw.githubusercontent.com/racarmichael/SmartThings-VirtualThermostat-WithDTH/master/images/cool_arrow_down.png"
+		}
 
-		main("temp2")
+   		standardTile("smartHeat", "device.thermostatMode", width:3, height:2, decoration: "flat") {
+			state "default", label:'Smart Heat Up', action:"smartHeatUp", icon:"https://raw.githubusercontent.com/tonesto7/nest-manager/master/Images/Devices/heat_arrow_up.png"
+		}
+
+		main("tempmain")
         
 		details( ["temperature", 
                   "coolingSetpointUp", "heatingSetpointUp", 
@@ -175,7 +185,8 @@ metadata {
                   "heatingSetpoint", 
           		  //"heatSliderControl", 
 				  "coolingSetpointDown", "heatingSetpointDown", 
-                  "thermostatMode",
+                  //"thermostatMode",
+                  "smartCool", "smartHeat",
                   "coolBtn","heatBtn", 
                   "autoBtn",
 				  //"coolSliderControl"
@@ -407,34 +418,27 @@ def coolingSetpointDown() {
 	setCoolingSetpoint(device.currentValue("coolingSetpoint") - 0.1)
 }
 
-def levelUp() {
+def levelChange(diff) {
 	def mode = device.currentValue("thermostatMode")
     switch (mode) {
     	case "heat":
-			setHeatingSetpoint(device.currentValue("heatingSetpoint") + 0.5)
+			setHeatingSetpoint(device.currentValue("heatingSetpoint") + diff)
             break
         case "cool":
-        	setCoolingSetpoint(device.currentValue("coolingSetpoint") + 0.5)
+        	setCoolingSetpoint(device.currentValue("coolingSetpoint") + diff)
             break
         default:
-        	setHeatingSetpoint(device.currentValue("heatingSetpoint") + 0.5)
-            setCoolingSetpoint(device.currentValue("coolingSetpoint") + 0.5)
+        	setHeatingSetpoint(device.currentValue("heatingSetpoint") + diff)
+            setCoolingSetpoint(device.currentValue("coolingSetpoint") + diff)
     }
 }
 
+def levelUp() {
+	levelChange(0.5)
+}
+
 def levelDown() {
-	def mode = device.currentValue("thermostatMode")
-    switch(mode){
-    	case "heat":
-        	setHeatingSetpoint(device.currentValue("heatingSetpoint") - 0.5)
-            break
-        case "cool":
-        	setCoolingSetpoint(device.currentValue("coolingSetpoint") - 0.5)
-            break
-        default:
-        	setHeatingSetpoint(device.currentValue("heatingSetpoint") - 0.5)
-            setCoolingSetpoint(device.currentValue("coolingSetpoint") - 0.5)
-    }
+	levelChange(-0.5)
 }
 
 def parse(data) {
@@ -464,6 +468,14 @@ def getHeatingSetpoint() {
 
 def getCoolingSetpoint() {
 	return device.currentValue("coolingSetpoint")
+}
+
+def getHeatDiff() {
+	return device.currentValue("heatDiff")
+}
+
+def getCoolDiff() {
+	return device.currentValue("coolDiff")
 }
 
 def poll() {
@@ -548,4 +560,98 @@ def setThermostatOperatingState(operatingState) {
         	setAdjustedCoolingPoint(device.currentValue("coolingSetpoint") + device.currentValue("coolDiff"))
         }
     }
+}
+
+
+
+def smartCoolDown(){
+	log.debug "smartCoolDown => thermostatMode: ${getThermostatMode()}, operatingState: ${getOperatingState()}"
+    def diff = getCoolDiff().max(0.3) // if diff is too small, this is not doing much
+
+	if(getThermostatMode() == "heat" || getOperatingState() == "heating") {
+		log.debug "todo, smartCoolDown not implemented for HEAT"
+    	//todo need to move setpoint, we don't actually want to switch to cooling in this case
+        return;
+	}
+
+	if(getOperatingState() == "heating") {
+        def setPointToStopHeating = getTemperature() - 0.1;
+	    def targetFromSetPoint = getHeatingSetpoint() - (diff*2)
+        def target = setPointToStopCooling.min(targetFromSetPoint)
+    	def targetDiff = target - getHeatingSetpoint();
+	    log.debug "smartCoolDown while heating => temp: ${getTemperature()}, heatSetPoint: ${getHeatingSetpoint()}, diff: ${diff}, targetFromSetPoint: ${targetFromSetPoint}, setPointToStopHeating: ${setPointToStopHeating}, target: ${target}, targetDiff: ${targetDiff}"
+    	levelChange(targetDiff)
+        return;
+	}
+    
+    if(getThermostatMode() == "heat") {
+    	log.debug "smartCoolDown while in heat mode, but not actually heating, simple move the setpoint down"
+        levelChange(-diff)
+        return
+    }
+
+    // Change the thermostat mode, so it's either cool or auto
+	if(getThermostatMode() == "off") {
+    	if(state.lastMode && state.lastMode != "heat") {
+       		setThermostatMode(state.lastMode)
+       	} else {
+	       	setThermostatMode("cool")
+        }
+	}
+        
+	if(getOperatingState() == "cooling" || getTemperature() > getCoolingSetpoint()){
+		log.debug "smartCoolDown already in a state where it should be cooling, lower the setpoint by ${diff}"	
+    	levelChange(-diff)
+        return
+    }    
+
+    def setPointToStartCooling = getTemperature() - diff - 0.1; 
+    def targetFromSetPoint = getCoolingSetpoint() - (diff*2)    
+    def target = targetFromSetPoint.min(setPointToStartCooling)
+    def targetDiff = target - getCoolingSetpoint()
+    log.debug "smartCoolDown => temp: ${getTemperature()}, coolSetPoint: ${getCoolingSetpoint()}, diff: ${diff}, targetFromSetPoint: ${targetFromSetPoint}, setPointToStartCooling: ${setPointToStartCooling}, target: ${target}, targetDiff: ${targetDiff}"
+    levelChange(targetDiff)
+}
+
+def smartHeatUp(){
+	log.debug "smartHeatUp => thermostatMode: ${getThermostatMode()}, operatingState: ${getOperatingState()}"
+    def diff = getHeatDiff().max(0.3) // if diff is too small, this is not doing much
+
+	if(getOperatingState() == "cooling") {
+        def setPointToStopCooling = getTemperature() + 0.1;
+	    def targetFromSetPoint = getCoolingSetpoint() + (diff*2)
+        def target = setPointToStopCooling.max(targetFromSetPoint)
+    	def targetDiff = target - getCoolingSetpoint();
+	    log.debug "smartHeatUp while cooling => temp: ${getTemperature()}, coolSetPoint: ${getCoolingSetpoint()}, diff: ${diff}, targetFromSetPoint: ${targetFromSetPoint}, setPointToStopCooling: ${setPointToStopCooling}, target: ${target}, targetDiff: ${targetDiff}"
+    	levelChange(targetDiff)
+        return;
+	}
+    
+    if(getThermostatMode() == "cool") {
+    	log.debug "smartHeatUp while in cool mode, but not actually cooling, simple move the setpoint up"
+        levelChange(diff)
+        return
+    }
+
+    // Change the thermostat mode, so it's either heat or auto
+	if(getThermostatMode() == "off") {
+    	if(state.lastMode && state.lastMode != "cool") {
+       		setThermostatMode(state.lastMode)
+       	} else {
+	       	setThermostatMode("heat")
+        }
+	}
+        
+	if(getOperatingState() == "heating" || getTemperature() < getHeatingSetpoint()){
+		log.debug "smartHeatUp already in a state where it should be heating, increase the setpoint by ${diff}"	
+    	levelChange(diff)
+        return
+    }    
+
+    def setPointToStartHeating = getTemperature() + diff + 0.1; 
+    def targetFromSetPoint = getHeatingSetpoint() + (diff*2)    
+    def target = targetFromSetPoint.max(setPointToStartCooling)
+    def targetDiff = target - getHeatingSetpoint();
+    log.debug "smartHeatUp => temp: ${getTemperature()}, heatSetPoint: ${getHeatingSetpoint()}, diff: ${diff}, targetFromSetPoint: ${targetFromSetPoint}, setPointToStartHeating: ${setPointToStartHeating}, target: ${target}, targetDiff: ${targetDiff}"
+    levelChange(targetDiff)
 }
