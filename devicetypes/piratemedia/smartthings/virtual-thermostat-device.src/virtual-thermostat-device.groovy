@@ -11,7 +11,7 @@ metadata {
 		capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Cooling Setpoint"
-		capability "Thermostat Setpoint"
+//		capability "Thermostat Setpoint"
 		capability "Thermostat Operating State"
 		capability "Configuration"
 		capability "Refresh"
@@ -54,7 +54,7 @@ metadata {
 				attributeState("default", label:'${currentValue}°', unit: unitString())
 			}
             
-			tileAttribute("device.thermostatSetpoint", key: "VALUE_CONTROL") {
+			tileAttribute("device.thermostatOperatingState", key: "VALUE_CONTROL") {
 				attributeState("VALUE_UP", label: '', action: "levelUp")
 				attributeState("VALUE_DOWN", label: '', action: "levelDown")
 			}
@@ -227,7 +227,7 @@ private initialize() {
     setCoolDiff(0)
 	sendCoolingSetpoint(defaultTemp()+2.0)
 	sendHeatingSetpoint(defaultTemp()-2.0)
-	sendThermostatSetpoint(defaultTemp())
+	//sendThermostatSetpoint(defaultTemp())
 	setThermostatOperatingState("off")
     setThermostatMode("off")
     setVirtualTemperature(defaultTemp())
@@ -274,6 +274,7 @@ def getTemperature() {
 	return device.currentValue("temperature")
 }
 
+/*
 def sendThermostatSetpoint(temp) {
 	def tsp = device.currentValue("thermostatSetpoint")
     if(temp != tsp) {
@@ -281,6 +282,7 @@ def sendThermostatSetpoint(temp) {
 		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString())
     }
 }
+*/
 
 def sendCoolingSetpoint(temp) {
 	def csp = device.currentValue("coolingSetpoint")
@@ -308,6 +310,7 @@ def sendHeatingSetpoint(temp) {
     }
 }
 
+/*
 def setThermostatSetpoint(temp) {
 	def tsp = device.currentValue("thermostatSetpoint")
 	log.debug "setThermostatSetpoint from " + tsp + " to " + temp
@@ -343,6 +346,7 @@ def autoThermostatSetPoint() {
         }
     }
 }
+*/
 
 def inRange(val, low, high) {
     if(val < low)
@@ -358,20 +362,22 @@ def setHeatingSetpoint(temp) {
     temp = inRange(temp, lowRange(), highRange())
     
     if(hsp != temp) {
-        if(device.currentValue('thermostatMode') == "heat") {
+        /*if(device.currentValue('thermostatMode') == "heat") {
             sendThermostatSetpoint(temp)
         } else if(device.currentValue('thermostatMode') == "auto") {
             autoThermostatSetPoint()
-        }
+        }*/
 
         def targetCool = temp + device.currentValue('heatCoolDelta')
         if(device.currentValue("coolingSetpoint") < targetCool) {
             sendCoolingSetpoint(targetCool)
         }
 
+		/*
         if(device.currentValue("thermostatSetpoint") < temp) {
             sendThermostatSetpoint(temp)
         }
+        */
 
 		sendHeatingSetpoint(temp)
     }
@@ -383,20 +389,24 @@ def setCoolingSetpoint(temp) {
     temp = inRange(temp, lowRange(), highRange())
     
 	if(csp != temp) {
+    	/*
         if(device.currentValue('thermostatMode') == "cool") {
             sendThermostatSetpoint(temp)
         } else if(device.currentValue('thermostatMode') == "auto") {
             autoThermostatSetPoint()
         }
+        */
 
         def targetHeat = temp - device.currentValue('heatCoolDelta')
         if(device.currentValue("heatingSetpoint") > targetHeat) {
             sendHeatingSetpoint(targetHeat)
         }
 
+		/*
         if(device.currentValue("thermostatSetpoint") > temp) {
             sendThermostatSetpoint(temp)
         }
+        */
 
 		sendCoolingSetpoint(temp)
 	}
@@ -458,9 +468,11 @@ def getOperatingState() {
 	return device.currentValue("thermostatOperatingState")
 }
 
+/*
 def getThermostatSetpoint() {
 	return device.currentValue("thermostatSetpoint")
 }
+*/
 
 def getHeatingSetpoint() {
 	return device.currentValue("heatingSetpoint")
@@ -497,12 +509,12 @@ def offbtn() {
 
 def coolbtn() {
 	setThermostatMode("cool")
-    setThermostatSetpoint(device.currentValue("coolingSetpoint")) 
+    //setThermostatSetpoint(device.currentValue("coolingSetpoint")) 
 }
 
 def heatbtn() {
 	setThermostatMode("heat")
-    setThermostatSetpoint(device.currentValue("heatingSetpoint")) 
+    //setThermostatSetpoint(device.currentValue("heatingSetpoint")) 
 }
 
 def autobtn() {
@@ -513,7 +525,7 @@ def autobtn() {
 def setThermostatMode(mode) {
 	log.trace "setting thermostat mode $mode"
 	if(device.currentValue("thermostatMode") != mode) {
-    	autoThermostatSetPoint()
+    	//autoThermostatSetPoint()
     	sendEvent(name: "thermostatMode", value: mode)
     }
 }
