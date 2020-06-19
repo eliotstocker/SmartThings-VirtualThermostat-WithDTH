@@ -141,9 +141,9 @@ def getAverageTemperature() {
 def switchOff(switches) {
 	log.debug "switching off: ${switches}, current values: " + switches.currentValue("switch")
 	for(s in switches) {
-    	if(s.currentValue("switch") != 'off'){
+    	//if(s.currentValue("switch") != 'off'){
         	s.off()
-        }
+        //}
     }
 	log.debug "done switching off: ${switches}, current values: " + switches.currentValue("switch")
 }
@@ -151,58 +151,60 @@ def switchOff(switches) {
 def switchOn(switches) {
 	log.debug "switching on: ${switches}, current values: " + switches.currentValue("switch")
 	for(s in switches) {
-    	if(s.currentValue("switch") != 'on'){
+    	//if(s.currentValue("switch") != 'on'){
         	s.on()
-        }
+        //}
     }
 	log.debug "done switching on: ${switches}, current values: " + switches.currentValue("switch")
 }
 
 def cool() {
 	log.debug "cooling outlets on, current value: " + cooling_outlets.currentValue("switch")
-    if(thermostat.currentValue("thermostatOperatingState") != 'cooling') {
-        if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
+    def state = thermostat.getOperatingState()
+    if(state != 'cooling') {
+    	thermostat.setThermostatOperatingState('cooling')
+       	switchOn(cooling_outlets)
+        if(state == 'heating') {
 		    switchOff(heating_outlets)
         }
-       	switchOn(cooling_outlets)
-    	thermostat.setThermostatOperatingState('cooling')
     }
 }
 
 def heat() {
 	log.debug "heating outlets on, current value: " + heating_outlets.currentValue("switch")
-    if(thermostat.currentValue("thermostatOperatingState") != 'heating') {
-        if(thermostat.currentValue("thermostatOperatingState") == 'cooling') {
+    def state = thermostat.getOperatingState()
+    if(state != 'heating') {
+    	thermostat.setThermostatOperatingState('heating')
+        switchOn(heating_outlets)
+        if(state == 'cooling') {
         	switchOff(cooling_outlets)
         }
-        switchOn(heating_outlets)
-    	thermostat.setThermostatOperatingState('heating')
     }
 }
 
 def off() {
 	log.debug "off, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
-    if(thermostat.currentValue("thermostatOperatingState") != 'off') {
-        if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
+    def state = thermostat.getOperatingState()
+    if(state != 'off') {
+    	thermostat.setThermostatOperatingState('off')
+        if(state == 'heating') {
         	switchOff(heating_outlets)
-        }
-        if(thermostat.currentValue("thermostatOperatingState") == 'cooling') {
+        } else if(state == 'cooling') {
        		switchOff(cooling_outlets)
         }
-    	thermostat.setThermostatOperatingState('off')
     }
 }
 
 def idle() {
 	log.debug "idle, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
-    if(thermostat.currentValue("thermostatOperatingState") != 'idle') {
-        if(thermostat.currentValue("thermostatOperatingState") == 'heating') {
+    def state = thermostat.getOperatingState()
+    if(state != 'idle') {
+    	thermostat.setThermostatOperatingState('idle')
+        if(state == 'heating') {
         	switchOff(heating_outlets)
-        }
-        if(thermostat.currentValue("thermostatOperatingState") == 'cooling') {
+        } else if(state == 'cooling') {
 		  	switchOff(cooling_outlets)
         }
-    	thermostat.setThermostatOperatingState('idle')
     }
 }
 
@@ -210,9 +212,10 @@ def handleChange() {
     def thermostat = getThermostat()
     if(thermostat) {
         log.debug "handle change, mode: " + thermostat.currentValue('thermostatMode') + 
+            ", operatingState: " + thermostat.currentValue("thermostatOperatingState") + 
             ", temp: " + getAverageTemperature() + 
             ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
-            ", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
+            //", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
             ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
             
         /*def attrs = thermostat.supportedAttributes
@@ -282,7 +285,7 @@ def updated()
 	}
     
     //subscribe to virtual device changes
-    subscribe(thermostat, "thermostatSetpoint", thermostatSetPointHandler)
+    //subscribe(thermostat, "thermostatSetpoint", thermostatSetPointHandler)
     subscribe(thermostat, "heatingSetpoint", heatingSetPointHandler)
     subscribe(thermostat, "coolingSetpoint", coolingSetPointHandler)
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
@@ -295,10 +298,12 @@ def updated()
     thermostat.setCoolDiff(coolDiff)
 }
 
+/*
 def thermostatSetPointHandler(evt) {
     log.debug "thermostatSetPointHandler: ${evt.stringValue}"
-    handleChange()
+    //handleChange()
 }
+*/
 
 def coolingSetPointHandler(evt) {
 	log.debug "coolingSetPointHandler: ${evt.stringValue}"
