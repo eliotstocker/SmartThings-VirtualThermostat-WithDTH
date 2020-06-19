@@ -29,14 +29,18 @@ preferences {
         input "emergencyCoolingSetpoint", "decimal", title: "Emergency Max Temp", required: false
     }
 	section("The minimum difference between the heating and cooling setpoint, it's recommended to not put this too low to conserve energy") {
-		input "heatCoolDelta", "decimal", title: "Heat / Cool Delta", required: false, defaultValue: 3.0
+		input "heatCoolDelta", "decimal", title: "Heat / Cool Delta", defaultValue: 3.0
 	}
 	section("The amount that the temperature is allowed to dip below the heating setpoint before engaging heating, it's recommended to not put this too low to avoid heaters turning on and off too frequently") {
-		input "heatDiff", "decimal", title: "Heat Differential", required: false, defaultValue: 0.3
+		input "heatDiff", "decimal", title: "Heat Differential", defaultValue: 0.3
 	}
 	section("The amount that the temperature is allowed to go above the cooling setpoint before engaging cooling, it's recommended to not put this too low to avoid coolers turning on and off too frequently") {
-		input "coolDiff", "decimal", title: "Cool Differential", required: false, defaultValue: 0.3
+		input "coolDiff", "decimal", title: "Cool Differential", defaultValue: 0.3
 	}
+
+    section("Fix for unreliable switches to automatically turn them on/off again, if it seems like turning them on/off did not work based on the temperature (Experimental)") {
+        input "unreliableSwitchFix", "bool", title: "Unreliable switch fix", defaultValue: false
+    }
 }
 
 def installed()
@@ -141,9 +145,7 @@ def getAverageTemperature() {
 def switchOff(switches) {
 	log.debug "switching off: ${switches}, current values: " + switches.currentValue("switch")
 	for(s in switches) {
-    	//if(s.currentValue("switch") != 'off'){
-        	s.off()
-        //}
+       	s.off()
     }
 	log.debug "done switching off: ${switches}, current values: " + switches.currentValue("switch")
 }
@@ -151,20 +153,72 @@ def switchOff(switches) {
 def switchOn(switches) {
 	log.debug "switching on: ${switches}, current values: " + switches.currentValue("switch")
 	for(s in switches) {
-    	//if(s.currentValue("switch") != 'on'){
-        	s.on()
-        //}
+       	s.on()
     }
 	log.debug "done switching on: ${switches}, current values: " + switches.currentValue("switch")
 }
 
+//set the expected direction (heat/cool/none) to be able to monitor if it's working
+def setExpectedDirection(direction) {
+    log.debug "direction change to ${direction}"
+    state.expectedDirection = direction
+    state.directionChangeWorked = false
+    state.directionChangeTime = new Date().getTime()
+}
+
+def temperatureHandler(evt) {
+    log.debug "temperatureHandler: ${evt.stringValue}"
+    state.curTemp = getAverageTemperature()
+    if(!state.directionChangeWorked && state.expectedDirection != 'none') {
+        //if we haven't proven that the direction change has worked yet, let's confirm that it worked
+        if(state.expectedDirection == 'cool' && state.curTemp < state.lastTemp) {
+            log.debug "expecting cool and temp went down from ${state.lastTemp} to ${state.curTemp} all good"
+            state.directionChangeWorked = true
+        }
+        if(state.expectedDirection == 'heat' && state.curTemp > state.lastTemp) {
+            log.debug "expecting heat and temp went up from ${state.lastTemp} to ${state.curTemp} all good"
+            state.directionChangeWorked = true
+        }
+
+        def timeSinceDirectionChange = new Date().getTime() - state.directionChangeTime
+        if(!state.directionChangeWorked && timeSinceDirectionChange > (60*4)){
+            if(!unreliableSwitchFix) {
+                log.debug "direction change did not work within 4 min, but since 'Unreliable Switch Fix' is off, nothing will be done. Seconds since direction change: ${timeSinceDirectionChange}"
+                return
+            }
+            log.debug "direction change did not work within 4 min, try flipping the switch again and reset the timer. Seconds since direction change: ${timeSinceDirectionChange}"
+            state.directionChangeTime = new Date().getTime()
+            def oState = thermostat.getOperatingState()
+            if(state.expectedDirection == 'cool') {
+                if(oState == 'cooling') {
+                    switchOn(cooling_outlets)
+                } else {
+                    switchOff(heating_outlets)
+                }
+            }
+            if(state.expectedDirection == 'heat') {
+                if(oState == 'heating') {
+                    switchOn(heating_outlets)
+                } else {
+                    switchOff(cooling_outlets)
+                }
+            }
+        }
+    }
+
+    state.lastTemp = state.curTemp
+    handleChange()
+}
+
+
 def cool() {
 	log.debug "cooling outlets on, current value: " + cooling_outlets.currentValue("switch")
-    def state = thermostat.getOperatingState()
-    if(state != 'cooling') {
+    def oState = thermostat.getOperatingState()
+    if(oState != 'cooling') {
+        setExpectedDirection('cool')
     	thermostat.setThermostatOperatingState('cooling')
        	switchOn(cooling_outlets)
-        if(state == 'heating') {
+        if(oState == 'heating') {
 		    switchOff(heating_outlets)
         }
     }
@@ -172,11 +226,12 @@ def cool() {
 
 def heat() {
 	log.debug "heating outlets on, current value: " + heating_outlets.currentValue("switch")
-    def state = thermostat.getOperatingState()
-    if(state != 'heating') {
+    def oState = thermostat.getOperatingState()
+    if(oState != 'heating') {
+        setExpectedDirection('heat')
     	thermostat.setThermostatOperatingState('heating')
         switchOn(heating_outlets)
-        if(state == 'cooling') {
+        if(oState == 'cooling') {
         	switchOff(cooling_outlets)
         }
     }
@@ -184,12 +239,13 @@ def heat() {
 
 def off() {
 	log.debug "off, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
-    def state = thermostat.getOperatingState()
-    if(state != 'off') {
+    def oState = thermostat.getOperatingState()
+    if(oState != 'off') {
     	thermostat.setThermostatOperatingState('off')
-        if(state == 'heating') {
+        setExpectedDirection('none')
+        if(oState == 'heating') {
         	switchOff(heating_outlets)
-        } else if(state == 'cooling') {
+        } else if(oState == 'cooling') {
        		switchOff(cooling_outlets)
         }
     }
@@ -197,13 +253,15 @@ def off() {
 
 def idle() {
 	log.debug "idle, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
-    def state = thermostat.getOperatingState()
-    if(state != 'idle') {
+    def oState = thermostat.getOperatingState()
+    if(oState != 'idle') {
     	thermostat.setThermostatOperatingState('idle')
-        if(state == 'heating') {
-        	switchOff(heating_outlets)
-        } else if(state == 'cooling') {
-		  	switchOff(cooling_outlets)
+        if(oState == 'heating') {
+            setExpectedDirection('cool')
+            switchOff(heating_outlets)
+        } else if(oState == 'cooling') {
+            setExpectedDirection('heat')
+            switchOff(cooling_outlets)
         }
     }
 }
@@ -213,9 +271,8 @@ def handleChange() {
     if(thermostat) {
         log.debug "handle change, mode: " + thermostat.currentValue('thermostatMode') + 
             ", operatingState: " + thermostat.currentValue("thermostatOperatingState") + 
-            ", temp: " + getAverageTemperature() + 
+            ", temp: " + getAverageTemperature() +
             ", coolingSetPoint: " + thermostat.currentValue("coolingSetpoint") +
-            //", thermostatSetPoint: " + thermostat.currentValue("thermostatSetpoint") +
             ", heatingSetPoint: " + thermostat.currentValue("heatingSetpoint")
             
         /*def attrs = thermostat.supportedAttributes
@@ -291,19 +348,13 @@ def updated()
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
     
     //reset some values
+    setExpectedDirection('none')
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
     thermostat.setHeatCoolDelta(heatCoolDelta)
     thermostat.setHeatDiff(heatDiff)
     thermostat.setCoolDiff(coolDiff)
 }
-
-/*
-def thermostatSetPointHandler(evt) {
-    log.debug "thermostatSetPointHandler: ${evt.stringValue}"
-    //handleChange()
-}
-*/
 
 def coolingSetPointHandler(evt) {
 	log.debug "coolingSetPointHandler: ${evt.stringValue}"
@@ -313,12 +364,6 @@ def coolingSetPointHandler(evt) {
 def heatingSetPointHandler(evt) {
 	log.debug "heatingSetPointHandler: ${evt.stringValue}"
 	handleChange()
-}
-
-def temperatureHandler(evt) {
-	log.debug "temperatureHandler: ${evt.stringValue}"
-//    getThermostat().setVirtualTemperature(getAverageTemperature())
-    handleChange()
 }
 
 def motionHandler(evt) {

@@ -11,7 +11,6 @@ metadata {
 		capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
 		capability "Thermostat Cooling Setpoint"
-//		capability "Thermostat Setpoint"
 		capability "Thermostat Operating State"
 		capability "Configuration"
 		capability "Refresh"
@@ -227,7 +226,6 @@ private initialize() {
     setCoolDiff(0)
 	sendCoolingSetpoint(defaultTemp()+2.0)
 	sendHeatingSetpoint(defaultTemp()-2.0)
-	//sendThermostatSetpoint(defaultTemp())
 	setThermostatOperatingState("off")
     setThermostatMode("off")
     setVirtualTemperature(defaultTemp())
@@ -237,10 +235,8 @@ private initialize() {
 }
 
 def getTempColors() {
-	def colorMap
-        //getTemperatureScale() == "C"   wantMetric()
 	if(shouldReportInCentigrade()) {
-		colorMap = [
+		return [
 			// Celsius Color Range
 			[value: 0, color: "#153591"],
 			[value: 7, color: "#1e9cbb"],
@@ -251,7 +247,7 @@ def getTempColors() {
 			[value: 36, color: "#bc2323"]
 			]
 	} else {
-		colorMap = [
+		return [
 			// Fahrenheit Color Range
 			[value: 40, color: "#153591"],
 			[value: 44, color: "#1e9cbb"],
@@ -273,16 +269,6 @@ def getRange() { return "${lowRange()}..${highRange()}" }
 def getTemperature() {
 	return device.currentValue("temperature")
 }
-
-/*
-def sendThermostatSetpoint(temp) {
-	def tsp = device.currentValue("thermostatSetpoint")
-    if(temp != tsp) {
-    	log.debug "sendThermostatSetpoint from " + tsp + " to " + temp
-		sendEvent(name:"thermostatSetpoint", value: temp, unit: unitString())
-    }
-}
-*/
 
 def sendCoolingSetpoint(temp) {
 	def csp = device.currentValue("coolingSetpoint")
@@ -310,44 +296,6 @@ def sendHeatingSetpoint(temp) {
     }
 }
 
-/*
-def setThermostatSetpoint(temp) {
-	def tsp = device.currentValue("thermostatSetpoint")
-	log.debug "setThermostatSetpoint from " + tsp + " to " + temp
-	if(tsp != temp) {
-        def csp = device.currentValue("coolingSetpoint")
-        def hsp = device.currentValue("heatingSetpoint")
-        def mode = device.currentValue('thermostatMode')
-        
-        if(mode == "heat" && hsp != temp) {
-            sendHeatingSetpoint(temp)
-        } else if(mode == "cool" && csp != temp) {
-            sendCoolingSetpoint(temp)
-        }
-
-        if(csp < temp) {
-            sendCoolingSetpoint(temp)
-        } else if(heat > temp) {
-            setHeatingSetpoint(temp)
-        }
-		sendThermostatSetpoint(temp)
-	}
-}
-
-def autoThermostatSetPoint() {
-    if(device.currentValue('thermostatMode') == "auto") {
-	    def temp = device.currentValue("thermostatSetpoint")
-    	def cool = device.currentValue("coolingSetpoint")
-    	def heat = device.currentValue("heatingSetpoint")
-
-		def newTemp = (cool + heat) / 2.0
-        if(newTemp != temp) {
-        	sendThermostatSetpoint(newTemp.setScale(1, BigDecimal.ROUND_HALF_EVEN))
-        }
-    }
-}
-*/
-
 def inRange(val, low, high) {
     if(val < low)
     	return low
@@ -362,22 +310,10 @@ def setHeatingSetpoint(temp) {
     temp = inRange(temp, lowRange(), highRange())
     
     if(hsp != temp) {
-        /*if(device.currentValue('thermostatMode') == "heat") {
-            sendThermostatSetpoint(temp)
-        } else if(device.currentValue('thermostatMode') == "auto") {
-            autoThermostatSetPoint()
-        }*/
-
         def targetCool = temp + device.currentValue('heatCoolDelta')
         if(device.currentValue("coolingSetpoint") < targetCool) {
             sendCoolingSetpoint(targetCool)
         }
-
-		/*
-        if(device.currentValue("thermostatSetpoint") < temp) {
-            sendThermostatSetpoint(temp)
-        }
-        */
 
 		sendHeatingSetpoint(temp)
     }
@@ -389,24 +325,10 @@ def setCoolingSetpoint(temp) {
     temp = inRange(temp, lowRange(), highRange())
     
 	if(csp != temp) {
-    	/*
-        if(device.currentValue('thermostatMode') == "cool") {
-            sendThermostatSetpoint(temp)
-        } else if(device.currentValue('thermostatMode') == "auto") {
-            autoThermostatSetPoint()
-        }
-        */
-
         def targetHeat = temp - device.currentValue('heatCoolDelta')
         if(device.currentValue("heatingSetpoint") > targetHeat) {
             sendHeatingSetpoint(targetHeat)
         }
-
-		/*
-        if(device.currentValue("thermostatSetpoint") > temp) {
-            sendThermostatSetpoint(temp)
-        }
-        */
 
 		sendCoolingSetpoint(temp)
 	}
@@ -509,12 +431,10 @@ def offbtn() {
 
 def coolbtn() {
 	setThermostatMode("cool")
-    //setThermostatSetpoint(device.currentValue("coolingSetpoint")) 
 }
 
 def heatbtn() {
 	setThermostatMode("heat")
-    //setThermostatSetpoint(device.currentValue("heatingSetpoint")) 
 }
 
 def autobtn() {
@@ -525,7 +445,6 @@ def autobtn() {
 def setThermostatMode(mode) {
 	log.trace "setting thermostat mode $mode"
 	if(device.currentValue("thermostatMode") != mode) {
-    	//autoThermostatSetPoint()
     	sendEvent(name: "thermostatMode", value: mode)
     }
 }
@@ -574,17 +493,15 @@ def setThermostatOperatingState(operatingState) {
     }
 }
 
-
-
+//The idea behind the smart cool and heat is to change the setpoint, so that if it's not cooling/heating now it will start so immediately
+// and likewise if it's already cooling/heating it will stop. The idea is to change the setpoint enough for this change to happen right now
+// and that it will stay that way at least for a little while. Without moving the setpoint too much.
+// Good example of use is of the thermostat is set to cool and it starts cooling, but you don't think it hot enough that it should start right now,
+// so you would click smartHeatUp. Alternatively if your thermostat is set to cool, but it's not cooling right now and you would want it to, you would
+// press smartCoolDown
 def smartCoolDown(){
 	log.debug "smartCoolDown => thermostatMode: ${getThermostatMode()}, operatingState: ${getOperatingState()}"
     def diff = getCoolDiff().max(0.3) // if diff is too small, this is not doing much
-
-	if(getThermostatMode() == "heat" || getOperatingState() == "heating") {
-		log.debug "todo, smartCoolDown not implemented for HEAT"
-    	//todo need to move setpoint, we don't actually want to switch to cooling in this case
-        return;
-	}
 
 	if(getOperatingState() == "heating") {
         def setPointToStopHeating = getTemperature() - 0.1;
