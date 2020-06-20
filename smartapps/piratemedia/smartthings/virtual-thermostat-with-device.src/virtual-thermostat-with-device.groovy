@@ -41,7 +41,7 @@ preferences {
     section("Fix for unreliable switches to automatically turn them on/off again, if it seems like turning them on/off did not work based on the temperature (Experimental)") {
         input "unreliableSwitchFix", "bool", title: "Unreliable switch fix", defaultValue: false
     }
-}
+} 
 
 def installed()
 {
@@ -167,8 +167,13 @@ def setExpectedDirection(direction) {
 }
 
 def temperatureHandler(evt) {
-    log.debug "temperatureHandler: ${evt.stringValue}"
     state.curTemp = getAverageTemperature()
+	def now = new Date().getTime()
+    def minSinceDirectionChange = (now - state.directionChangeTime)/(1000*60)
+    log.debug "temperatureHandler: ${evt.stringValue}, curTemp: ${state.curTemp}, lastTemp: ${state.lastTemp}" +
+    	", expectedDirection: ${state.expectedDirection}, directionChangeWorked: ${state.directionChangeWorked}" +
+    	", minSinceDirectionChange: ${minSinceDirectionChange}, now: ${now}, directionChangeTime: ${state.directionChangeTime}" 
+
     if(!state.directionChangeWorked && state.expectedDirection != 'none') {
         //if we haven't proven that the direction change has worked yet, let's confirm that it worked
         if(state.expectedDirection == 'cool' && state.curTemp < state.lastTemp) {
@@ -180,13 +185,12 @@ def temperatureHandler(evt) {
             state.directionChangeWorked = true
         }
 
-        def timeSinceDirectionChange = new Date().getTime() - state.directionChangeTime
-        if(!state.directionChangeWorked && timeSinceDirectionChange > (60*4)){
+        if(!state.directionChangeWorked && minSinceDirectionChange > 4){
             if(!unreliableSwitchFix) {
-                log.debug "direction change did not work within 4 min, but since 'Unreliable Switch Fix' is off, nothing will be done. Seconds since direction change: ${timeSinceDirectionChange}"
+                log.debug "direction change did not work within 4 min, but since 'Unreliable Switch Fix' is off, nothing will be done. Minutes since direction change: ${minSinceDirectionChange}"
                 return
             }
-            log.debug "direction change did not work within 4 min, try flipping the switch again and reset the timer. Seconds since direction change: ${timeSinceDirectionChange}"
+            log.debug "direction change did not work within 4 min, try flipping the switch again and reset the timer. Minutes since direction change: ${minSinceDirectionChange}"
             state.directionChangeTime = new Date().getTime()
             def oState = thermostat.getOperatingState()
             if(state.expectedDirection == 'cool') {
@@ -212,7 +216,7 @@ def temperatureHandler(evt) {
 
 
 def cool() {
-	log.debug "cooling outlets on, current value: " + cooling_outlets.currentValue("switch")
+	//log.debug "cooling outlets on, current value: " + cooling_outlets.currentValue("switch")
     def oState = thermostat.getOperatingState()
     if(oState != 'cooling') {
         setExpectedDirection('cool')
@@ -225,7 +229,7 @@ def cool() {
 }
 
 def heat() {
-	log.debug "heating outlets on, current value: " + heating_outlets.currentValue("switch")
+	//log.debug "heating outlets on, current value: " + heating_outlets.currentValue("switch")
     def oState = thermostat.getOperatingState()
     if(oState != 'heating') {
         setExpectedDirection('heat')
@@ -238,7 +242,7 @@ def heat() {
 }
 
 def off() {
-	log.debug "off, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
+	//log.debug "off, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
     def oState = thermostat.getOperatingState()
     if(oState != 'off') {
     	thermostat.setThermostatOperatingState('off')
@@ -252,7 +256,7 @@ def off() {
 }
 
 def idle() {
-	log.debug "idle, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
+	//log.debug "idle, all outlets off, current value heating: " + heating_outlets.currentValue("switch") + ", cooling: " + cooling_outlets.currentValue("switch")
     def oState = thermostat.getOperatingState()
     if(oState != 'idle') {
     	thermostat.setThermostatOperatingState('idle')
