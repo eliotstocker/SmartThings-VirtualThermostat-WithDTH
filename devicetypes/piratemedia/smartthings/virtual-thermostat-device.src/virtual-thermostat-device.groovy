@@ -17,7 +17,7 @@ metadata {
 
 		command "refresh"
 		command "poll"
-        
+         
 		command "offbtn"
 		command "coolbtn"
 		command "heatbtn"
@@ -579,7 +579,7 @@ def smartHeatUp(){
 
     def setPointToStartHeating = getTemperature() + diff + 0.1; 
     def targetFromSetPoint = getHeatingSetpoint() + (diff*2)    
-    def target = targetFromSetPoint.max(setPointToStartCooling)
+    def target = targetFromSetPoint.max(setPointToStartHeating)
     def targetDiff = target - getHeatingSetpoint();
     log.debug "smartHeatUp => temp: ${getTemperature()}, heatSetPoint: ${getHeatingSetpoint()}, diff: ${diff}, targetFromSetPoint: ${targetFromSetPoint}, setPointToStartHeating: ${setPointToStartHeating}, target: ${target}, targetDiff: ${targetDiff}"
     levelChange(targetDiff)
