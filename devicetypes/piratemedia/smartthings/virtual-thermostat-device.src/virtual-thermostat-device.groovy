@@ -7,6 +7,7 @@ metadata {
     executeCommandsLocally: true,
     ocfDeviceType: "oic.d.thermostat") {
 		capability "Temperature Measurement"
+		capability "Relative Humidity Measurement"
 		capability "Thermostat"
 		capability "Thermostat Mode"
 		capability "Thermostat Heating Setpoint"
@@ -31,6 +32,7 @@ metadata {
 		command "coolingSetpointUp"
 		command "coolingSetpointDown"
 		command "setVirtualTemperature", ["number"]
+		command "setVirtualHumidity", ["number"]
 		command "setHeatCoolDelta", ["number"]
 		command "setHeatDiff", ["number"]
 		command "setCoolDiff", ["number"]
@@ -84,6 +86,10 @@ metadata {
 			tileAttribute("device.adjustedCoolingPoint", key: "COOLING_SETPOINT") {
 				attributeState("default", label:'${currentValue}')
 			}
+            
+            tileAttribute("device.humidity", key: "SECONDARY_CONTROL") {
+     		   attributeState("humidity", label:'${currentValue}%', unit:"%", defaultState: true)
+    		}
 		}
         
 		valueTile("tempmain", "device.temperature", width: 2, height: 2, decoration: "flat") {
@@ -229,6 +235,7 @@ private initialize() {
 	setThermostatOperatingState("off")
     setThermostatMode("off")
     setVirtualTemperature(defaultTemp())
+    setVirtualHumidity(50)
     sendEvent(name:"supportedThermostatModes", value: thermostatModes(), displayed: false)
 
 	state.tempScale = "C"
@@ -270,9 +277,14 @@ def getTemperature() {
 	return device.currentValue("temperature")
 }
 
+def roundTemp(temp) {
+	return Math.round(temp * 100) / 100;
+}
+
 def sendCoolingSetpoint(temp) {
 	def csp = device.currentValue("coolingSetpoint")
     if(temp != csp) {
+    	temp = roundTemp(temp);
     	log.debug "sendCoolingSetpoint from " + csp + " to " + temp
 		sendEvent(name:"coolingSetpoint", value: temp, unit: unitString())
         if(device.currentValue("thermostatOperatingState") == "cooling") {
@@ -286,6 +298,7 @@ def sendCoolingSetpoint(temp) {
 def sendHeatingSetpoint(temp) {
 	def hsp = device.currentValue("heatingSetpoint")
     if(temp != hsp) {
+    	temp = roundTemp(temp);
         log.debug "sendHeatingSetpoint from " + hsp + " to " + temp
 		sendEvent(name:"heatingSetpoint", value: temp, unit: unitString())
         if(device.currentValue("thermostatOperatingState") == "heating") {
@@ -445,6 +458,10 @@ def setThermostatMode(mode) {
 
 def setVirtualTemperature(temp) {
 	sendEvent(name:"temperature", value: temp, unit: unitString(), displayed: true)
+}
+
+def setVirtualHumidity(humidity) {
+	sendEvent(name:"humidity", value: humidity, unit: unitString(), displayed: true)
 }
 
 def setHeatCoolDelta(delta) {
