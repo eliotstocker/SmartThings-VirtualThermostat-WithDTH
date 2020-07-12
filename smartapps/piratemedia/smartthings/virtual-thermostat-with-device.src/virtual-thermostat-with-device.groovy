@@ -10,8 +10,11 @@ definition(
 )
 
 preferences {
-	section("Choose a temperature sensor(s)... (If multiple sensors are selected, the average value will be used)"){
+	section("Choose temperature sensor(s)... (If multiple sensors are selected, the average value will be used)"){
 		input "sensors", "capability.temperatureMeasurement", title: "Sensor", multiple: true
+	}
+	section("Choose humidity sensor(s)... (optional, if multiple sensors are selected, the average value will be used)"){
+		input "humidity_sensors", "capability.relativeHumidityMeasurement", title: "Humidity Sensors", multiple: true, required: false
 	}
 	section("Select the heater outlet(s)... (optional, leave blank if heating not required)"){
 		input "heating_outlets", "capability.switch", title: "Heating Outlets", multiple: true, required: false
@@ -135,6 +138,22 @@ def getAverageTemperature() {
 	for(sensor in sensors) {
     	total += sensor.currentValue("temperature")
         thermostat.setIndividualTemperature(sensor.currentValue("temperature"), count, sensor.label)
+        count++
+    }
+    
+    //divide by number of sensors
+    return total / count
+}
+
+
+def getAverageHumidity() {
+	def total = 0;
+    def count = 0;
+    
+    //total all sensors temperature
+	for(sensor in humidity_sensors) {
+    	total += sensor.currentValue("humidity")
+        thermostat.setIndividualTemperature(sensor.currentValue("humidity"), count, sensor.label)
         count++
     }
     
@@ -349,6 +368,11 @@ def updated()
     //subscribe to temperature changes
 	subscribe(sensors, "temperature", temperatureHandler)
     
+    //subscribe to temperature changes
+    if(humidity_sensors) {
+		subscribe(humidity_sensors, "humidity", humidityHandler)
+    }
+    
     //subscribe to contact sensor changes
 	if (motion) {
 		subscribe(motion, "contact", motionHandler)
@@ -363,6 +387,7 @@ def updated()
     setExpectedDirection('none')
     thermostat.clearSensorData()
     thermostat.setVirtualTemperature(getAverageTemperature())
+    thermostat.setVirtualHumidity(getAverageHumidity())
     thermostat.setHeatCoolDelta(heatCoolDelta)
     thermostat.setHeatDiff(heatDiff)
     thermostat.setCoolDiff(coolDiff)
@@ -386,4 +411,9 @@ def motionHandler(evt) {
 def thermostatModeHandler(evt) {
 	log.debug "thermostatModeHandler: ${evt.stringValue}"
 	handleChange()
+}
+
+def humidityHandler(evt) {
+	log.debug "humidityHandler: ${evt.stringValue}"
+    thermostat.setVirtualHumidity(getAverageHumidity())
 }
