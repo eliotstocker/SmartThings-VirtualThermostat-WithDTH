@@ -390,12 +390,6 @@ def getOperatingState() {
 	return device.currentValue("thermostatOperatingState")
 }
 
-/*
-def getThermostatSetpoint() {
-	return device.currentValue("thermostatSetpoint")
-}
-*/
-
 def getHeatingSetpoint() {
 	return device.currentValue("heatingSetpoint")
 }
