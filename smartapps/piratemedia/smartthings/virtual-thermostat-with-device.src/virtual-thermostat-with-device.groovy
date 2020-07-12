@@ -162,7 +162,7 @@ def switchOn(switches) {
 def setExpectedDirection(direction) {
     log.debug "direction change to ${direction}"
     state.expectedDirection = direction
-    state.directionChangeWorked = false
+    state.tempAtDirectionChange = state.curTemp
     state.directionChangeTime = new Date().getTime()
 }
 
@@ -170,47 +170,48 @@ def temperatureHandler(evt) {
     state.curTemp = getAverageTemperature()
 	def now = new Date().getTime()
     def minSinceDirectionChange = (now - state.directionChangeTime)/(1000*60)
-    log.debug "temperatureHandler: ${evt.stringValue}, curTemp: ${state.curTemp}, lastTemp: ${state.lastTemp}" +
-    	", expectedDirection: ${state.expectedDirection}, directionChangeWorked: ${state.directionChangeWorked}" +
-    	", minSinceDirectionChange: ${minSinceDirectionChange}, now: ${now}, directionChangeTime: ${state.directionChangeTime}" 
+    log.debug "temperatureHandler: ${evt.stringValue}, curTemp: ${state.curTemp}" +
+    	", expectedDirection: ${state.expectedDirection}" +
+    	", minSinceDirectionChange: ${minSinceDirectionChange}, now: ${now}, directionChangeTime: ${state.directionChangeTime}, tempAtDirectionChange: ${state.tempAtDirectionChange}" 
 
-    if(!state.directionChangeWorked && state.expectedDirection != 'none') {
-        //if we haven't proven that the direction change has worked yet, let's confirm that it worked
-        if(state.expectedDirection == 'cool' && state.curTemp < state.lastTemp) {
-            log.debug "expecting cool and temp went down from ${state.lastTemp} to ${state.curTemp} all good"
-            state.directionChangeWorked = true
+    if(state.expectedDirection != 'none') {
+    	directionChangeWorked = false;
+        if(state.expectedDirection == 'cool') { 
+        	directionChangeWorked = state.curTemp < state.tempAtDirectionChange
         }
-        if(state.expectedDirection == 'heat' && state.curTemp > state.lastTemp) {
-            log.debug "expecting heat and temp went up from ${state.lastTemp} to ${state.curTemp} all good"
-            state.directionChangeWorked = true
+        if(state.expectedDirection == 'heat') { 
+           	directionChangeWorked = state.curTemp > state.tempAtDirectionChange
         }
 
-        if(!state.directionChangeWorked && minSinceDirectionChange > 4){
-            if(!unreliableSwitchFix) {
-                log.debug "direction change did not work within 4 min, but since 'Unreliable Switch Fix' is off, nothing will be done. Minutes since direction change: ${minSinceDirectionChange}"
-                return
-            }
-            log.debug "direction change did not work within 4 min, try flipping the switch again and reset the timer. Minutes since direction change: ${minSinceDirectionChange}"
-            state.directionChangeTime = new Date().getTime()
-            def oState = thermostat.getOperatingState()
-            if(state.expectedDirection == 'cool') {
-                if(oState == 'cooling') {
-                    switchOn(cooling_outlets)
+        if(minSinceDirectionChange > 8 && minSinceDirectionChange < 16){
+        	//If we at any point in the in the period 8-16 min after a direction change see that the temperature is not trending in the right direction, we try to press the button again to ensure that it's truly pressed.
+            //This is specifically to fix unreliable switches such as switchbot
+			if(!directionChangeWorked) {        	
+                if(!unreliableSwitchFix) {
+                    log.debug "direction change did not work within 8 min, but since 'Unreliable Switch Fix' is off, nothing will be done. Minutes since direction change: ${minSinceDirectionChange}"                
                 } else {
-                    switchOff(heating_outlets)
-                }
-            }
-            if(state.expectedDirection == 'heat') {
-                if(oState == 'heating') {
-                    switchOn(heating_outlets)
-                } else {
-                    switchOff(cooling_outlets)
+                    log.debug "direction change did not work within 8 min, try flipping the switch again and reset the timer. Minutes since direction change: ${minSinceDirectionChange}"
+                    state.directionChangeTime = new Date().getTime()
+                    def oState = thermostat.getOperatingState()
+                    if(state.expectedDirection == 'cool') {
+                        if(oState == 'cooling') {
+                            switchOn(cooling_outlets)
+                        } else {
+                            switchOff(heating_outlets)
+                        }
+                    }
+                    if(state.expectedDirection == 'heat') {
+                        if(oState == 'heating') {
+                            switchOn(heating_outlets)
+                        } else {
+                            switchOff(cooling_outlets)
+                        }
+                    }
                 }
             }
         }
     }
 
-    state.lastTemp = state.curTemp
     handleChange()
 }
 
@@ -346,7 +347,6 @@ def updated()
 	}
     
     //subscribe to virtual device changes
-    //subscribe(thermostat, "thermostatSetpoint", thermostatSetPointHandler)
     subscribe(thermostat, "heatingSetpoint", heatingSetPointHandler)
     subscribe(thermostat, "coolingSetpoint", coolingSetPointHandler)
     subscribe(thermostat, "thermostatMode", thermostatModeHandler)
