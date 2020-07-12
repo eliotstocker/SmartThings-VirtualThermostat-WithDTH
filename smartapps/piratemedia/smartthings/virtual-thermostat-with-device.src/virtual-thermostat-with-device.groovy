@@ -13,11 +13,11 @@ preferences {
 	section("Choose a temperature sensor(s)... (If multiple sensors are selected, the average value will be used)"){
 		input "sensors", "capability.temperatureMeasurement", title: "Sensor", multiple: true
 	}
-	section("Select the heater outlet(s)... "){
-		input "heating_outlets", "capability.switch", title: "Heating Outlets", multiple: true
+	section("Select the heater outlet(s)... (optional, leave blank if heating not required)"){
+		input "heating_outlets", "capability.switch", title: "Heating Outlets", multiple: true, required: false
 	}
-    section("Select the cooling outlet(s)... "){
-        input "cooling_outlets", "capability.switch", title: "Cooling Outlets", multiple: true
+    section("Select the cooling outlet(s)... (optional, leave blank if cooling not required)"){
+        input "cooling_outlets", "capability.switch", title: "Cooling Outlets", multiple: true, required: false
     }
 	section("Only heat/cool when contact(s) aren't open (optional, leave blank to not require contact sensor)..."){
 		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
@@ -143,19 +143,27 @@ def getAverageTemperature() {
 }
 
 def switchOff(switches) {
-	log.debug "switching off: ${switches}, current values: " + switches.currentValue("switch")
-	for(s in switches) {
-       	s.off()
+	if(switches) {
+        log.debug "switching off: ${switches}, current values: " + switches.currentValue("switch")
+        for(s in switches) {
+            s.off()
+        }
+        log.debug "done switching off: ${switches}, current values: " + switches.currentValue("switch")
+    } else {
+    	log.debug "nothing to switch off"
     }
-	log.debug "done switching off: ${switches}, current values: " + switches.currentValue("switch")
 }
 
 def switchOn(switches) {
-	log.debug "switching on: ${switches}, current values: " + switches.currentValue("switch")
-	for(s in switches) {
-       	s.on()
+	if(switches) {
+        log.debug "switching on: ${switches}, current values: " + switches.currentValue("switch")
+        for(s in switches) {
+            s.on()
+        }
+        log.debug "done switching on: ${switches}, current values: " + switches.currentValue("switch")
+    } else {
+    	log.debug "nothing to switch on"
     }
-	log.debug "done switching on: ${switches}, current values: " + switches.currentValue("switch")
 }
 
 //set the expected direction (heat/cool/none) to be able to monitor if it's working
@@ -175,7 +183,7 @@ def temperatureHandler(evt) {
     	", minSinceDirectionChange: ${minSinceDirectionChange}, now: ${now}, directionChangeTime: ${state.directionChangeTime}, tempAtDirectionChange: ${state.tempAtDirectionChange}" 
 
     if(state.expectedDirection != 'none') {
-    	directionChangeWorked = false;
+    	def directionChangeWorked = false;
         if(state.expectedDirection == 'cool') { 
         	directionChangeWorked = state.curTemp < state.tempAtDirectionChange
         }
