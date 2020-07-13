@@ -23,7 +23,13 @@ preferences {
         input "cooling_outlets", "capability.switch", title: "Cooling Outlets", multiple: true, required: false
     }
 	section("Only heat/cool when contact(s) aren't open (optional, leave blank to not require contact sensor)..."){
-		input "motion", "capability.contactSensor", title: "Contact", required: false, multiple: true
+		input "motion", "capability.contactSensor", title: "Motion Contact", required: false, multiple: true
+	}
+	section("Button/switch to trigger the smart heat function (optional, good for controlling thermostat from physical buttons or from virtual buttons that can be triggered by other apps or voice commands)"){
+		input "smart_heat_button", "capability.switch", title: "Smart heat button", required: false
+	}
+	section("Button/switch to trigger the smart cool function (optional, good for controlling thermostat from physical buttons or from virtual buttons that can be triggered by other apps or voice commands)"){
+		input "smart_cool_button", "capability.switch", title: "Smart cool button", required: false
 	}
 	section("Never go below this temperature: (optional)"){
 		input "emergencyHeatingSetpoint", "decimal", title: "Emergency Min Temp", required: false
@@ -368,16 +374,24 @@ def updated()
     //subscribe to temperature changes
 	subscribe(sensors, "temperature", temperatureHandler)
     
-    //subscribe to temperature changes
+    //subscribe to humidity changes
     if(humidity_sensors) {
 		subscribe(humidity_sensors, "humidity", humidityHandler)
     }
     
     //subscribe to contact sensor changes
-	if (motion) {
+	if(motion) {
 		subscribe(motion, "contact", motionHandler)
 	}
-    
+
+	//smart heat and cool from input switches
+    if(smart_heat_button) {
+		subscribe(smart_heat_button, "switch", smartHeatHandler)
+    }
+    if(smart_cool_button) {
+		subscribe(smart_cool_button, "switch", smartCoolHandler)
+    }
+   
     //subscribe to virtual device changes
     subscribe(thermostat, "heatingSetpoint", heatingSetPointHandler)
     subscribe(thermostat, "coolingSetpoint", coolingSetPointHandler)
@@ -416,4 +430,20 @@ def thermostatModeHandler(evt) {
 def humidityHandler(evt) {
 	log.debug "humidityHandler: ${evt.stringValue}"
     thermostat.setVirtualHumidity(getAverageHumidity())
+}
+
+def smartHeatHandler(evt) {
+	log.debug "smartHeatHandler: ${evt.stringValue}"
+    if(smart_heat_button.currentValue('switch') == "on") {
+    	getThermostat().smartHeatUp()
+        smart_heat_button.off()
+    }
+}
+
+def smartCoolHandler(evt) {
+	log.debug "smartCoolHandler: ${evt.stringValue}"
+    if(smart_cool_button.currentValue('switch') == "on") {
+    	getThermostat().smartCoolDown()
+        smart_cool_button.off()
+    }
 }
