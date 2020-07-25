@@ -224,7 +224,7 @@ def temperatureHandler(evt) {
                     log.debug "direction change did not work within 8 min, but since 'Unreliable Switch Fix' is off, nothing will be done. Minutes since direction change: ${minSinceDirectionChange}"                
                 } else {
                     log.debug "direction change did not work within 8 min, try flipping the switch again and reset the timer. Minutes since direction change: ${minSinceDirectionChange}"
-                    state.directionChangeTime = new Date().getTime()
+                    setExpectedDirection(state.expectedDirection) //resets time and temp
                     def oState = thermostat.getOperatingState()
                     if(state.expectedDirection == 'cool') {
                         if(oState == 'cooling') {
