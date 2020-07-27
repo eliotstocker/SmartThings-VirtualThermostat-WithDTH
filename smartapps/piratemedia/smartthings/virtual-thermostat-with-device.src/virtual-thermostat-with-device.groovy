@@ -163,8 +163,12 @@ def getAverageHumidity() {
         count++
     }
     
-    //divide by number of sensors
-    return total / count
+    //only divide by number of sensors if there are more than 0
+    if(count > 0) {
+        return total / count
+    } else {
+        return 0
+    }
 }
 
 def switchOff(switches) {
